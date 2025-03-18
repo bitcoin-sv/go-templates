@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bitcoin-sv/go-templates/inscription"
 	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-templates/template/inscription"
 )
 
 type Bsv21 struct {

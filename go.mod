@@ -26,4 +26,3 @@ require (
 )
 
 replace github.com/bsv-blockchain/go-sdk => ../go-sdk
-
