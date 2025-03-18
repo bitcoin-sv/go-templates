@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"unicode/utf8"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-templates/lib"
 )
 
 type File struct {
@@ -18,7 +18,7 @@ type File struct {
 
 type Inscription struct {
 	File         File              `json:"file,omitempty"`
-	Parent       *overlay.Outpoint `json:"parent,omitempty"`
+	Parent       *lib.Outpoint     `json:"parent,omitempty"`
 	Bitcom       map[string][]byte `json:"bitcom,omitempty"`
 	ScriptPrefix []byte            `json:"prefix,omitempty"`
 	ScriptSuffix []byte            `json:"suffix,omitempty"`
@@ -69,7 +69,7 @@ func Decode(scr *script.Script) *Inscription {
 					}
 				case 3:
 					if len(op2.Data) == 36 {
-						insc.Parent = overlay.NewOutpointFromBytes([36]byte(op2.Data))
+						insc.Parent = lib.NewOutpointFromBytes([36]byte(op2.Data))
 					}
 				}
 
