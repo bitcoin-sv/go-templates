@@ -21,13 +21,15 @@ You can write code like this:
 Name                            | Description
 --------------------------------|--------------------------
 [Example](./src/example.ts)     | Do a thing
+[Cosign](./template/cosign)     | A template for implementing co-signing functionality, allowing two parties to sign a transaction
+[BSocial](./template/bsocial)   | A template for creating social media transactions using Magic Attribute Protocol (MAP) according to BitcoinSchema.org standards
 
 ## Contribution Guidelines
 
 We're always looking for contributors to add the coolest new templates. Whatever kinds of scripts you come up with - all contributions are welcome.
 
 1. **Fork & Clone**: Fork this repository and clone it to your local machine.
-2. **Set Up**: Run `go install github.com/bitcoin-sv/go-templates` to install all dependencies.
+2. **Set Up**: Run `go install github.com/bsv-blockchain/go-templates` to install all dependencies.
 3. **Make Changes**: Create a new branch and make your changes.
 4. **Test**: Ensure all tests pass by running `go test`.
 5. **Commit**: Commit your changes and push to your fork.
