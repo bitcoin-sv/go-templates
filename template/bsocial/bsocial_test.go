@@ -60,7 +60,7 @@ func TestCreatePost(t *testing.T) {
 	// Verify B data
 	require.NotNil(t, bmapTx.B)
 	require.Len(t, bmapTx.B, 1)
-	require.Equal(t, post.Content, bmapTx.B[0].Data.UTF8)
+	require.Equal(t, post.Content, string(bmapTx.B[0].Data))
 	require.Equal(t, string(post.MediaType), bmapTx.B[0].MediaType)
 	require.Equal(t, string(post.Encoding), bmapTx.B[0].Encoding)
 }
@@ -124,7 +124,7 @@ func TestCreateReply(t *testing.T) {
 	// Verify B data
 	require.NotNil(t, bmapTx.B)
 	require.Len(t, bmapTx.B, 1)
-	require.Equal(t, reply.Content, bmapTx.B[0].Data.UTF8)
+	require.Equal(t, reply.Content, string(bmapTx.B[0].Data))
 	require.Equal(t, string(reply.MediaType), bmapTx.B[0].MediaType)
 	require.Equal(t, string(reply.Encoding), bmapTx.B[0].Encoding)
 }
@@ -162,7 +162,7 @@ func TestCreateMessage(t *testing.T) {
 	// Verify B data
 	require.NotNil(t, bmapTx.B)
 	require.Len(t, bmapTx.B, 1)
-	require.Equal(t, msg.Content, bmapTx.B[0].Data.UTF8)
+	require.Equal(t, msg.Content, string(bmapTx.B[0].Data))
 	require.Equal(t, string(msg.MediaType), bmapTx.B[0].MediaType)
 	require.Equal(t, string(msg.Encoding), bmapTx.B[0].Encoding)
 }

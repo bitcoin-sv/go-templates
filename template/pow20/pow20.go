@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/bitcoin-sv/go-sdk/chainhash"
-	"github.com/bitcoin-sv/go-sdk/script"
-	"github.com/bitcoin-sv/go-sdk/transaction"
-	sighash "github.com/bitcoin-sv/go-sdk/transaction/sighash"
-	"github.com/bitcoin-sv/go-sdk/transaction/template/p2pkh"
-	"github.com/bitcoin-sv/go-sdk/util"
+	"github.com/bsv-blockchain/go-sdk/chainhash"
+	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
+	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
+	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
+	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type Pow20 struct {
