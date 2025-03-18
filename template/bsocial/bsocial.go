@@ -43,8 +43,16 @@ type Post struct {
 	ContextValue    string           `json:"contextValue,omitempty"`
 	Subcontext      Context          `json:"subcontext,omitempty"`
 	SubcontextValue string           `json:"subcontextValue,omitempty"`
-	Tags            []string         `json:"tags,omitempty"`
-	Attachments     []bitcom.B       `json:"attachments,omitempty"`
+	// Tags            []string         `json:"tags,omitempty"`
+}
+
+// Message represents a message in a channel or to a user
+type Message struct {
+	MediaType    bitcom.MediaType `json:"mediaType"`
+	Encoding     bitcom.Encoding  `json:"encoding"`
+	Content      string           `json:"content"`
+	Context      Context          `json:"context"`
+	ContextValue string           `json:"contextValue"`
 }
 
 type BMap struct {
@@ -53,32 +61,88 @@ type BMap struct {
 	AIP []bitcom.AIP `json:"aip,omitempty"`
 }
 
-// Decode
-func Decode(scr *script.Script) (bmaps *BMap) {
-	bc := bitcom.Decode(scr)
-
-	bmap := BMap{}
-
-	// Decode MAP protocol
-	maps := bitcom.DecodeMap(bc)
-	for _, m := range maps {
-		bmap.MAP = append(bmap.MAP, *m)
-	}
-
-	// Decode B protocol
-	bs := bitcom.DecodeB(bc)
-	for _, b := range bs {
-		bmap.B = append(bmap.B, *b)
-	}
-
-	// Decode AIP protocol
-	aips := bitcom.DecodeAIP(bc)
-	for _, aip := range aips {
-		bmap.AIP = append(bmap.AIP, *aip)
-	}
-
-	return &bmap
+type BSocial struct {
+	Post        *Post       `json:"post"`
+	Reply       *Reply      `json:"reply"`
+	Like        *Like       `json:"like"`
+	Unlike      *Unlike     `json:"unlike"`
+	Follow      *Follow     `json:"follow"`
+	Unfollow    *Unfollow   `json:"unfollow"`
+	Message     *Message    `json:"message"`
+	AIP         *bitcom.AIP `json:"aip"`
+	Attachments []bitcom.B  `json:"attachments,omitempty"`
 }
+
+func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
+	for _, output := range tx.Outputs {
+		if bc := bitcom.Decode(output.LockingScript); bc != nil {
+			for _, proto := range bc.Protocols {
+				switch proto.Protocol {
+				case bitcom.MapPrefix:
+					if m := bitcom.DecodeMap(proto.Script); m != nil {
+						switch m.Data["type"] {
+						case "post":
+							bsocial = &BSocial{
+								Post: &Post{
+									MediaType:       bitcom.MediaType(m.Data["mediaType"]),
+									Encoding:        Encoding(m.Data["encoding"]),
+									Content:         m.Data["content"],
+									Context:         Context(m.Data["context"]),
+									ContextValue:    m.Data["contextValue"],
+									Subcontext:      Context(m.Data["subcontext"]),
+									SubcontextValue: m.Data["subcontextValue"],
+									// Tags:            m.Data["tags"],
+								},
+							}
+						case "reply":
+						case "like":
+						case "unlike":
+						case "follow":
+						case "unfollow":
+						case "message":
+						}
+					}
+				}
+			}
+			// if bsocial == nil {
+			// 	if bsocial = Decode(output.LockingScript); bsocial != nil {
+			// 		continue
+			// 	}
+			// } else if bs := bitcom.DecodeB(output.LockingScript); len(bs) > 0 {
+			// 	bsocial.Attachments = append(bsocial.Attachments, bs...)
+			// }
+		}
+	}
+	return
+}
+
+// // Decode
+// func Decode(scr *script.Script) (bsocial *BSocial) {
+// 	bc := bitcom.Decode(scr)
+
+// 	bmap := BMap{}
+
+// 	// Decode MAP protocol
+// 	maps := bitcom.DecodeMap(bc)
+// 	for _, m := range maps {
+// 		switch m.Data["type"] {
+
+// 	}
+
+// 	// Decode B protocol
+// 	bs := bitcom.DecodeB(bc)
+// 	for _, b := range bs {
+// 		bmap.B = append(bmap.B, *b)
+// 	}
+
+// 	// Decode AIP protocol
+// 	aips := bitcom.DecodeAIP(bc)
+// 	for _, aip := range aips {
+// 		bmap.AIP = append(bmap.AIP, *aip)
+// 	}
+
+// 	return &bmap
+// }
 
 // CreatePost creates a new post transaction
 func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
@@ -322,15 +386,6 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 	// TODO: Add proper UTXO handling and change address
 
 	return tx, nil
-}
-
-// Message represents a message in a channel or to a user
-type Message struct {
-	MediaType    bitcom.MediaType `json:"mediaType"`
-	Encoding     bitcom.Encoding  `json:"encoding"`
-	Content      string           `json:"content"`
-	Context      Context          `json:"context"`
-	ContextValue string           `json:"contextValue"`
 }
 
 // CreateMessage creates a new message transaction

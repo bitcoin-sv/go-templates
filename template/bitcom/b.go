@@ -36,48 +36,39 @@ type B struct {
 }
 
 // DecodeB decodes the b data from the transaction script
-func DecodeB(b *Bitcom) []*B {
-	bs := []*B{}
-	for _, proto := range b.Protocols {
-		if proto.Protocol == BPrefix {
-			pos := &proto.Pos
-			scr := script.NewFromBytes(proto.Script)
-			var op *script.ScriptChunk
-			var err error
+func DecodeB(scr *script.Script) *B {
+	pos := &ZERO
+	var op *script.ScriptChunk
+	var err error
 
-			b := &B{}
+	b := &B{}
 
-			// Protocol order: PREFIX DATA MEDIA_TYPE ENCODING FILENAME
-			// Skip prefix as it's already checked
+	// Protocol order: PREFIX DATA MEDIA_TYPE ENCODING FILENAME
+	// Skip prefix as it's already checked
 
-			// Read DATA
-			if op, err = scr.ReadOp(pos); err != nil {
-				continue
-			}
-			b.Data = op.Data
-
-			// Read MEDIA_TYPE
-			if op, err = scr.ReadOp(pos); err != nil {
-				continue
-			}
-			b.MediaType = MediaType(op.Data)
-
-			// Read ENCODING
-			if op, err = scr.ReadOp(pos); err != nil {
-				continue
-			}
-			b.Encoding = Encoding(op.Data)
-
-			// Try to read optional FILENAME
-			if op, err = scr.ReadOp(pos); err == nil {
-				// Successfully read filename
-				b.Filename = string(op.Data)
-			}
-
-			// Add to results
-			bs = append(bs, b)
-
-		}
+	// Read DATA
+	if op, err = scr.ReadOp(pos); err != nil {
+		return nil
 	}
-	return bs
+	b.Data = op.Data
+
+	// Read MEDIA_TYPE
+	if op, err = scr.ReadOp(pos); err != nil {
+		return nil
+	}
+	b.MediaType = MediaType(op.Data)
+
+	// Read ENCODING
+	if op, err = scr.ReadOp(pos); err != nil {
+		return nil
+	}
+	b.Encoding = Encoding(op.Data)
+
+	// Try to read optional FILENAME
+	if op, err = scr.ReadOp(pos); err == nil {
+		// Successfully read filename
+		b.Filename = string(op.Data)
+	}
+
+	return b
 }
