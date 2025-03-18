@@ -4,11 +4,12 @@ import (
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/bsv-blockchain/go-templates/template/bitcom"
 )
 
 const (
 	// Protocol prefixes
-	MapPrefix = "1PuQa7K62MiKCtssSLKy1kh56WWU7MtUR5"
+	// bitcom.MapPrefix = "1PuQa7K62MiKCtssSLKy1kh56WWU7MtUR5"
 	AIPPrefix = "15PciHG22SNLQJXMoSUaWVi7WSqc7hCfva"
 	AppName   = "bsocial"
 )
@@ -92,7 +93,7 @@ func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Addr
 	// Create MAP protocol output
 	mapScript := &script.Script{}
 	mapScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	mapScript.AppendPushData([]byte(MapPrefix))
+	mapScript.AppendPushData([]byte(bitcom.MapPrefix))
 	mapScript.AppendPushData([]byte("SET"))
 	mapScript.AppendPushData([]byte("app"))
 	mapScript.AppendPushData([]byte(AppName))
@@ -127,7 +128,7 @@ func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Addr
 	if len(post.Tags) > 0 {
 		tagsScript := &script.Script{}
 		tagsScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-		tagsScript.AppendPushData([]byte(MapPrefix))
+		tagsScript.AppendPushData([]byte(bitcom.MapPrefix))
 		tagsScript.AppendPushData([]byte("SET"))
 		tagsScript.AppendPushData([]byte("app"))
 		tagsScript.AppendPushData([]byte(AppName))
@@ -167,7 +168,7 @@ func CreateReply(reply Post, replyTxID string, utxos []*transaction.UTXO, change
 	// Create MAP protocol output
 	mapScript := &script.Script{}
 	mapScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	mapScript.AppendPushData([]byte(MapPrefix))
+	mapScript.AppendPushData([]byte(bitcom.MapPrefix))
 	mapScript.AppendPushData([]byte("SET"))
 	mapScript.AppendPushData([]byte("app"))
 	mapScript.AppendPushData([]byte(AppName))
@@ -196,7 +197,7 @@ func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *scrip
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte(MapPrefix))
+	s.AppendPushData([]byte(bitcom.MapPrefix))
 	s.AppendPushData([]byte("SET"))
 	s.AppendPushData([]byte("app"))
 	s.AppendPushData([]byte(AppName))
@@ -227,7 +228,7 @@ func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *s
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte(MapPrefix))
+	s.AppendPushData([]byte(bitcom.MapPrefix))
 	s.AppendPushData([]byte("SET"))
 	s.AppendPushData([]byte("app"))
 	s.AppendPushData([]byte(AppName))
@@ -258,7 +259,7 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte(MapPrefix))
+	s.AppendPushData([]byte(bitcom.MapPrefix))
 	s.AppendPushData([]byte("SET"))
 	s.AppendPushData([]byte("app"))
 	s.AppendPushData([]byte(AppName))
@@ -289,7 +290,7 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte(MapPrefix))
+	s.AppendPushData([]byte(bitcom.MapPrefix))
 	s.AppendPushData([]byte("SET"))
 	s.AppendPushData([]byte("app"))
 	s.AppendPushData([]byte(AppName))
@@ -345,7 +346,7 @@ func CreateMessage(msg Message, utxos []*transaction.UTXO, changeAddress *script
 	// Create MAP protocol output
 	mapScript := &script.Script{}
 	mapScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	mapScript.AppendPushData([]byte(MapPrefix))
+	mapScript.AppendPushData([]byte(bitcom.MapPrefix))
 	mapScript.AppendPushData([]byte("SET"))
 	mapScript.AppendPushData([]byte("app"))
 	mapScript.AppendPushData([]byte(AppName))
