@@ -5,6 +5,7 @@ import (
 
 	"github.com/bitcoinschema/go-bmap"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
+	"github.com/bsv-blockchain/go-templates/template/bitcom"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +16,7 @@ func TestCreatePost(t *testing.T) {
 
 	// Create a test post
 	post := Post{
-		MediaType: MediaTypeTextMarkdown,
+		MediaType: bitcom.MediaTypeTextMarkdown,
 		Encoding:  EncodingUTF8,
 		Content:   "# Hello BSV\nThis is a test post",
 		Tags:      []string{"test", "bsv", "markdown"},
@@ -100,7 +101,7 @@ func TestCreateReply(t *testing.T) {
 
 	// Create a test reply
 	reply := Post{
-		MediaType: MediaTypeTextPlain,
+		MediaType: bitcom.MediaTypeTextPlain,
 		Encoding:  EncodingUTF8,
 		Content:   "This is a test reply",
 	}
@@ -136,8 +137,8 @@ func TestCreateMessage(t *testing.T) {
 
 	// Create a test message
 	msg := Message{
-		MediaType:    MediaTypeTextPlain,
-		Encoding:     EncodingUTF8,
+		MediaType:    bitcom.MediaTypeTextPlain,
+		Encoding:     bitcom.EncodingUTF8,
 		Content:      "Hello, this is a test message",
 		Context:      ContextChannel,
 		ContextValue: "test-channel",

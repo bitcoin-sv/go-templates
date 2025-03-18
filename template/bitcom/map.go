@@ -24,6 +24,7 @@ type Map struct {
 	Data map[string]string `json:"data"`
 }
 
+// DecodeMap decodes the map data from the transaction script
 func DecodeMap(bitcom *Bitcom) []*Map {
 	maps := []*Map{}
 	for _, proto := range bitcom.Protocols {

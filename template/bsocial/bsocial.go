@@ -10,19 +10,8 @@ import (
 const (
 	// Protocol prefixes
 	// bitcom.MapPrefix = "1PuQa7K62MiKCtssSLKy1kh56WWU7MtUR5"
-	AIPPrefix = "15PciHG22SNLQJXMoSUaWVi7WSqc7hCfva"
-	AppName   = "bsocial"
-)
 
-// Media types
-type MediaType string
-
-const (
-	MediaTypeTextPlain    MediaType = "text/plain"
-	MediaTypeTextMarkdown MediaType = "text/markdown"
-	MediaTypeTextHTML     MediaType = "text/html"
-	MediaTypeImagePNG     MediaType = "image/png"
-	MediaTypeImageJPEG    MediaType = "image/jpeg"
+	AppName = "bsocial"
 )
 
 // Encoding types
@@ -47,29 +36,48 @@ const (
 
 // Post represents a new piece of content
 type Post struct {
-	MediaType       MediaType `json:"mediaType"`
-	Encoding        Encoding  `json:"encoding"`
-	Content         string    `json:"content"`
-	Context         Context   `json:"context,omitempty"`
-	ContextValue    string    `json:"contextValue,omitempty"`
-	Subcontext      Context   `json:"subcontext,omitempty"`
-	SubcontextValue string    `json:"subcontextValue,omitempty"`
-	Tags            []string  `json:"tags,omitempty"`
-	Attachments     []B       `json:"attachments,omitempty"`
+	MediaType       bitcom.MediaType `json:"mediaType"`
+	Encoding        Encoding         `json:"encoding"`
+	Content         string           `json:"content"`
+	Context         Context          `json:"context,omitempty"`
+	ContextValue    string           `json:"contextValue,omitempty"`
+	Subcontext      Context          `json:"subcontext,omitempty"`
+	SubcontextValue string           `json:"subcontextValue,omitempty"`
+	Tags            []string         `json:"tags,omitempty"`
+	Attachments     []bitcom.B       `json:"attachments,omitempty"`
 }
 
-// B represents B protocol data
-type B struct {
-	MediaType MediaType `json:"mediaType"`
-	Encoding  Encoding  `json:"encoding"`
-	Data      Data      `json:"data"`
+type BMap struct {
+	MAP []bitcom.Map `json:"map"`
+	B   []bitcom.B   `json:"b"`
+	AIP []bitcom.AIP `json:"aip,omitempty"`
 }
 
-// Data represents the actual content in B protocol
-type Data struct {
-	UTF8   string `json:"utf8,omitempty"`
-	Base64 string `json:"base64,omitempty"`
-	Hex    string `json:"hex,omitempty"`
+// Decode
+func Decode(scr *script.Script) (bmaps *BMap) {
+	bc := bitcom.Decode(scr)
+
+	bmap := BMap{}
+
+	// Decode MAP protocol
+	maps := bitcom.DecodeMap(bc)
+	for _, m := range maps {
+		bmap.MAP = append(bmap.MAP, *m)
+	}
+
+	// Decode B protocol
+	bs := bitcom.DecodeB(bc)
+	for _, b := range bs {
+		bmap.B = append(bmap.B, *b)
+	}
+
+	// Decode AIP protocol
+	aips := bitcom.DecodeAIP(bc)
+	for _, aip := range aips {
+		bmap.AIP = append(bmap.AIP, *aip)
+	}
+
+	return &bmap
 }
 
 // CreatePost creates a new post transaction
@@ -114,7 +122,7 @@ func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Addr
 
 	// Add AIP signature
 	mapScript.AppendPushData([]byte("|"))
-	mapScript.AppendPushData([]byte(AIPPrefix))
+	mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
 	mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	mapScript.AppendPushData(pubKey.Compressed())
@@ -154,7 +162,7 @@ func CreateReply(reply Post, replyTxID string, utxos []*transaction.UTXO, change
 	// Create B protocol output first
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte("B"))
+	s.AppendPushData([]byte(bitcom.BPrefix))
 	s.AppendPushData([]byte(reply.Content))
 	s.AppendPushData([]byte(string(reply.MediaType)))
 	s.AppendPushData([]byte(string(reply.Encoding)))
@@ -179,7 +187,7 @@ func CreateReply(reply Post, replyTxID string, utxos []*transaction.UTXO, change
 
 	// Add AIP signature
 	mapScript.AppendPushData([]byte("|"))
-	mapScript.AppendPushData([]byte(AIPPrefix))
+	mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
 	mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	mapScript.AppendPushData(pubKey.Compressed())
@@ -206,7 +214,7 @@ func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *scrip
 	s.AppendPushData([]byte("tx"))
 	s.AppendPushData([]byte(likeTxID))
 	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(AIPPrefix))
+	s.AppendPushData([]byte(bitcom.AIPPrefix))
 	s.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	s.AppendPushData(pubKey.Compressed())
@@ -237,7 +245,7 @@ func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *s
 	s.AppendPushData([]byte("tx"))
 	s.AppendPushData([]byte(unlikeTxID))
 	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(AIPPrefix))
+	s.AppendPushData([]byte(bitcom.AIPPrefix))
 	s.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	s.AppendPushData(pubKey.Compressed())
@@ -268,7 +276,7 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 	s.AppendPushData([]byte("bapID"))
 	s.AppendPushData([]byte(followBapID))
 	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(AIPPrefix))
+	s.AppendPushData([]byte(bitcom.AIPPrefix))
 	s.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	s.AppendPushData(pubKey.Compressed())
@@ -299,7 +307,7 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 	s.AppendPushData([]byte("bapID"))
 	s.AppendPushData([]byte(unfollowBapID))
 	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(AIPPrefix))
+	s.AppendPushData([]byte(bitcom.AIPPrefix))
 	s.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	s.AppendPushData(pubKey.Compressed())
@@ -318,11 +326,11 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 
 // Message represents a message in a channel or to a user
 type Message struct {
-	MediaType    MediaType `json:"mediaType"`
-	Encoding     Encoding  `json:"encoding"`
-	Content      string    `json:"content"`
-	Context      Context   `json:"context"`
-	ContextValue string    `json:"contextValue"`
+	MediaType    bitcom.MediaType `json:"mediaType"`
+	Encoding     bitcom.Encoding  `json:"encoding"`
+	Content      string           `json:"content"`
+	Context      Context          `json:"context"`
+	ContextValue string           `json:"contextValue"`
 }
 
 // CreateMessage creates a new message transaction
@@ -332,7 +340,7 @@ func CreateMessage(msg Message, utxos []*transaction.UTXO, changeAddress *script
 	// Create B protocol output first
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte("B"))
+	s.AppendPushData([]byte(bitcom.BPrefix))
 	s.AppendPushData([]byte(msg.Content))
 	s.AppendPushData([]byte(string(msg.MediaType)))
 	s.AppendPushData([]byte(string(msg.Encoding)))
@@ -357,7 +365,7 @@ func CreateMessage(msg Message, utxos []*transaction.UTXO, changeAddress *script
 
 	// Add AIP signature
 	mapScript.AppendPushData([]byte("|"))
-	mapScript.AppendPushData([]byte(AIPPrefix))
+	mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
 	mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
 	pubKey := privateKey.PubKey()
 	mapScript.AppendPushData(pubKey.Compressed())
