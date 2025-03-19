@@ -34,25 +34,50 @@ const (
 	ContextVideoID  Context = "videoID"
 )
 
+type Action struct {
+	App             string  `json:"app"`
+	Type            string  `json:"type"`
+	Context         Context `json:"context,omitempty"`
+	ContextValue    string  `json:"contextValue,omitempty"`
+	Subcontext      Context `json:"subcontext,omitempty"`
+	SubcontextValue string  `json:"subcontextValue,omitempty"`
+}
+
 // Post represents a new piece of content
 type Post struct {
-	MediaType       bitcom.MediaType `json:"mediaType"`
-	Encoding        Encoding         `json:"encoding"`
-	Content         string           `json:"content"`
-	Context         Context          `json:"context,omitempty"`
-	ContextValue    string           `json:"contextValue,omitempty"`
-	Subcontext      Context          `json:"subcontext,omitempty"`
-	SubcontextValue string           `json:"subcontextValue,omitempty"`
-	// Tags            []string         `json:"tags,omitempty"`
+	Action
+	B bitcom.B `json:"b"`
+}
+
+type Reply struct {
+	Action
+	B bitcom.B `json:"b"`
+}
+
+// Like represents liking a post
+type Like struct {
+	Action
+}
+
+// Unlike represents unliking a post
+type Unlike struct {
+	Action
+}
+
+// Follow represents following a user
+type Follow struct {
+	Action
+}
+
+// Unfollow represents unfollowing a user
+type Unfollow struct {
+	Action
 }
 
 // Message represents a message in a channel or to a user
 type Message struct {
-	MediaType    bitcom.MediaType `json:"mediaType"`
-	Encoding     bitcom.Encoding  `json:"encoding"`
-	Content      string           `json:"content"`
-	Context      Context          `json:"context"`
-	ContextValue string           `json:"contextValue"`
+	Action
+	B bitcom.B `json:"b"`
 }
 
 type BMap struct {
@@ -71,91 +96,167 @@ type BSocial struct {
 	Message     *Message    `json:"message"`
 	AIP         *bitcom.AIP `json:"aip"`
 	Attachments []bitcom.B  `json:"attachments,omitempty"`
+	Tags        [][]string  `json:"tags,omitempty"`
 }
 
 func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
+	bsocial = &BSocial{}
+
 	for _, output := range tx.Outputs {
 		if bc := bitcom.Decode(output.LockingScript); bc != nil {
 			for _, proto := range bc.Protocols {
 				switch proto.Protocol {
 				case bitcom.MapPrefix:
 					if m := bitcom.DecodeMap(proto.Script); m != nil {
+						// Check for tags in MAP data
+						if m.Data["app"] == AppName && m.Data["type"] == "post" {
+							// Try to extract tags if present
+							if tagsField, exists := m.Data["tags"]; exists {
+								// Handle different tag formats
+								processTags(bsocial, tagsField)
+								continue
+							}
+						}
+
+						// Process by type
 						switch m.Data["type"] {
 						case "post":
-							bsocial = &BSocial{
-								Post: &Post{
-									MediaType:       bitcom.MediaType(m.Data["mediaType"]),
-									Encoding:        Encoding(m.Data["encoding"]),
-									Content:         m.Data["content"],
+							bsocial.Post = &Post{
+								B: bitcom.B{
+									MediaType: bitcom.MediaType(m.Data["mediaType"]),
+									Encoding:  bitcom.Encoding(m.Data["encoding"]),
+									Data:      []byte(m.Data["content"]),
+								},
+								Action: Action{
+									Type:            "post",
 									Context:         Context(m.Data["context"]),
 									ContextValue:    m.Data["contextValue"],
 									Subcontext:      Context(m.Data["subcontext"]),
 									SubcontextValue: m.Data["subcontextValue"],
-									// Tags:            m.Data["tags"],
 								},
 							}
 						case "reply":
+							bsocial.Reply = &Reply{
+								B: bitcom.B{
+									MediaType: bitcom.MediaType(m.Data["mediaType"]),
+									Encoding:  bitcom.Encoding(m.Data["encoding"]),
+									Data:      []byte(m.Data["content"]),
+								},
+								Action: Action{
+									Type:         "reply",
+									Context:      Context(m.Data["context"]),
+									ContextValue: m.Data["contextValue"],
+								},
+							}
 						case "like":
+							bsocial.Like = &Like{
+								Action: Action{
+									Type:         "like",
+									Context:      ContextTx,
+									ContextValue: m.Data["tx"],
+								},
+							}
 						case "unlike":
+							bsocial.Unlike = &Unlike{
+								Action: Action{
+									Type:         "unlike",
+									Context:      ContextTx,
+									ContextValue: m.Data["tx"],
+								},
+							}
 						case "follow":
+							bsocial.Follow = &Follow{
+								Action: Action{
+									Type:         "follow",
+									Context:      ContextBapID,
+									ContextValue: m.Data["bapID"],
+								},
+							}
 						case "unfollow":
+							bsocial.Unfollow = &Unfollow{
+								Action: Action{
+									Type:         "unfollow",
+									Context:      ContextBapID,
+									ContextValue: m.Data["bapID"],
+								},
+							}
 						case "message":
+							bsocial.Message = &Message{
+								B: bitcom.B{
+									MediaType: bitcom.MediaType(m.Data["mediaType"]),
+									Encoding:  bitcom.Encoding(m.Data["encoding"]),
+									Data:      []byte(m.Data["content"]),
+								},
+								Action: Action{
+									Type:         "message",
+									Context:      Context(m.Data["context"]),
+									ContextValue: m.Data["contextValue"],
+								},
+							}
 						}
 					}
+				case bitcom.BPrefix:
+					// For B protocol handling, use the original script
+					// Since this is complex, we'll skip B attachment processing for now
+					// TODO: Implement proper B protocol attachment processing
 				}
 			}
-			// if bsocial == nil {
-			// 	if bsocial = Decode(output.LockingScript); bsocial != nil {
-			// 		continue
-			// 	}
-			// } else if bs := bitcom.DecodeB(output.LockingScript); len(bs) > 0 {
-			// 	bsocial.Attachments = append(bsocial.Attachments, bs...)
-			// }
 		}
 	}
+
+	// If bsocial is empty (no fields set), return nil
+	if bsocial.Post == nil && bsocial.Reply == nil && bsocial.Like == nil &&
+		bsocial.Unlike == nil && bsocial.Follow == nil && bsocial.Unfollow == nil &&
+		bsocial.Message == nil && bsocial.AIP == nil && len(bsocial.Attachments) == 0 &&
+		len(bsocial.Tags) == 0 {
+		return nil
+	}
+
 	return
 }
 
-// // Decode
-// func Decode(scr *script.Script) (bsocial *BSocial) {
-// 	bc := bitcom.Decode(scr)
+// processTags handles different tag formats and adds them to the BSocial object
+func processTags(bsocial *BSocial, tagsField interface{}) {
+	// Handle string
+	if tagStr, ok := tagsField.(string); ok {
+		bsocial.Tags = append(bsocial.Tags, []string{tagStr})
+		return
+	}
 
-// 	bmap := BMap{}
+	// Handle []string
+	if tagSlice, ok := tagsField.([]string); ok {
+		bsocial.Tags = append(bsocial.Tags, tagSlice)
+		return
+	}
 
-// 	// Decode MAP protocol
-// 	maps := bitcom.DecodeMap(bc)
-// 	for _, m := range maps {
-// 		switch m.Data["type"] {
-
-// 	}
-
-// 	// Decode B protocol
-// 	bs := bitcom.DecodeB(bc)
-// 	for _, b := range bs {
-// 		bmap.B = append(bmap.B, *b)
-// 	}
-
-// 	// Decode AIP protocol
-// 	aips := bitcom.DecodeAIP(bc)
-// 	for _, aip := range aips {
-// 		bmap.AIP = append(bmap.AIP, *aip)
-// 	}
-
-// 	return &bmap
-// }
+	// Handle []interface{}
+	if tagIface, ok := tagsField.([]interface{}); ok {
+		var parsedTags []string
+		for _, t := range tagIface {
+			if ts, ok := t.(string); ok {
+				parsedTags = append(parsedTags, ts)
+			}
+		}
+		if len(parsedTags) > 0 {
+			bsocial.Tags = append(bsocial.Tags, parsedTags)
+		}
+	}
+}
 
 // CreatePost creates a new post transaction
-func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreatePost(post Post, tags []string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 
 	// Create B protocol output first
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	s.AppendPushData([]byte("B"))
-	s.AppendPushData([]byte(post.Content))
-	s.AppendPushData([]byte(string(post.MediaType)))
-	s.AppendPushData([]byte(string(post.Encoding)))
-	s.AppendPushData([]byte("UTF8"))
+	s.AppendPushData([]byte(bitcom.BPrefix))
+	s.AppendPushData(post.B.Data)
+	s.AppendPushData([]byte(string(post.B.MediaType)))
+	s.AppendPushData([]byte(string(post.B.Encoding)))
+	if post.B.Filename != "" {
+		s.AppendPushData([]byte(post.B.Filename))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: s,
@@ -197,7 +298,7 @@ func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Addr
 	})
 
 	// Add tags if present
-	if len(post.Tags) > 0 {
+	if len(tags) > 0 {
 		tagsScript := &script.Script{}
 		tagsScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
 		tagsScript.AppendPushData([]byte(bitcom.MapPrefix))
@@ -207,7 +308,7 @@ func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Addr
 		tagsScript.AppendPushData([]byte("type"))
 		tagsScript.AppendPushData([]byte("post"))
 		tagsScript.AppendPushData([]byte("tags"))
-		for _, tag := range post.Tags {
+		for _, tag := range tags {
 			tagsScript.AppendPushData([]byte(tag))
 		}
 		tx.AddOutput(&transaction.TransactionOutput{
@@ -220,17 +321,19 @@ func CreatePost(post Post, utxos []*transaction.UTXO, changeAddress *script.Addr
 }
 
 // CreateReply creates a reply to an existing post
-func CreateReply(reply Post, replyTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 
 	// Create B protocol output first
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
 	s.AppendPushData([]byte(bitcom.BPrefix))
-	s.AppendPushData([]byte(reply.Content))
-	s.AppendPushData([]byte(string(reply.MediaType)))
-	s.AppendPushData([]byte(string(reply.Encoding)))
-	s.AppendPushData([]byte("UTF8"))
+	s.AppendPushData(reply.B.Data)
+	s.AppendPushData([]byte(string(reply.B.MediaType)))
+	s.AppendPushData([]byte(string(reply.B.Encoding)))
+	if reply.B.Filename != "" {
+		s.AppendPushData([]byte(reply.B.Filename))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: s,
@@ -396,10 +499,12 @@ func CreateMessage(msg Message, utxos []*transaction.UTXO, changeAddress *script
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
 	s.AppendPushData([]byte(bitcom.BPrefix))
-	s.AppendPushData([]byte(msg.Content))
-	s.AppendPushData([]byte(string(msg.MediaType)))
-	s.AppendPushData([]byte(string(msg.Encoding)))
-	s.AppendPushData([]byte("UTF8"))
+	s.AppendPushData(msg.B.Data)
+	s.AppendPushData([]byte(string(msg.B.MediaType)))
+	s.AppendPushData([]byte(string(msg.B.Encoding)))
+	if msg.B.Filename != "" {
+		s.AppendPushData([]byte(msg.B.Filename))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: s,
