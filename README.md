@@ -29,7 +29,7 @@ Name                            | Description
 We're always looking for contributors to add the coolest new templates. Whatever kinds of scripts you come up with - all contributions are welcome.
 
 1. **Fork & Clone**: Fork this repository and clone it to your local machine.
-2. **Set Up**: Run `go install github.com/bsv-blockchain/go-templates` to install all dependencies.
+2. **Set Up**: Run `go install github.com/bitcoin-sv/go-templates` to install all dependencies.
 3. **Make Changes**: Create a new branch and make your changes.
 4. **Test**: Ensure all tests pass by running `go test`.
 5. **Commit**: Commit your changes and push to your fork.

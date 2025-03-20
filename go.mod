@@ -1,4 +1,4 @@
-module github.com/bsv-blockchain/go-templates
+module github.com/bitcoin-sv/go-templates
 
 go 1.24.1
 

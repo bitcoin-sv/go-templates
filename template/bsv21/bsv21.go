@@ -5,9 +5,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bitcoin-sv/go-templates/lib"
+	"github.com/bitcoin-sv/go-templates/template/inscription"
 	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-templates/lib"
-	"github.com/bsv-blockchain/go-templates/template/inscription"
+)
+
+type Op string
+
+var (
+	OpMint     Op = "deploy+mint"
+	OpTransfer Op = "transfer"
+	OpBurn     Op = "burn"
 )
 
 type Bsv21 struct {
@@ -53,14 +61,14 @@ func Decode(scr *script.Script) *Bsv21 {
 		}
 
 		switch bsv21.Op {
-		case "deploy+mint":
+		case string(OpMint):
 			if sym, ok := data["sym"]; ok {
 				bsv21.Symbol = &sym
 			}
 			if icon, ok := data["icon"]; ok {
 				bsv21.Icon = &icon
 			}
-		case "transfer", "burn":
+		case string(OpTransfer), string(OpBurn):
 			if id, ok := data["id"]; !ok {
 				return nil
 			} else if _, err = lib.NewOutpointFromString(id); err != nil {

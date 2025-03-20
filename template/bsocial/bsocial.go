@@ -1,10 +1,10 @@
 package bsocial
 
 import (
+	"github.com/bitcoin-sv/go-templates/template/bitcom"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
-	"github.com/bsv-blockchain/go-templates/template/bitcom"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"unicode/utf8"
 
+	"github.com/bitcoin-sv/go-templates/lib"
 	"github.com/bsv-blockchain/go-sdk/script"
-	"github.com/bsv-blockchain/go-templates/lib"
 )
 
 type File struct {
