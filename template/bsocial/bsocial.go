@@ -10,9 +10,6 @@ import (
 )
 
 const (
-	// Protocol prefixes
-	// bitcom.MapPrefix = "1PuQa7K62MiKCtssSLKy1kh56WWU7MtUR5"
-
 	AppName = "bsocial"
 )
 
@@ -650,7 +647,7 @@ func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *sc
 }
 
 // processTags handles different tag formats and adds them to the BSocial object
-func processTags(bsocial *BSocial, tagsField interface{}) {
+func processTags(bsocial *BSocial, tagsField any) {
 	// Handle string
 	if tagStr, ok := tagsField.(string); ok {
 		bsocial.Tags = append(bsocial.Tags, []string{tagStr})
@@ -663,8 +660,8 @@ func processTags(bsocial *BSocial, tagsField interface{}) {
 		return
 	}
 
-	// Handle []interface{}
-	if tagIface, ok := tagsField.([]interface{}); ok {
+	// Handle []any
+	if tagIface, ok := tagsField.([]any); ok {
 		var parsedTags []string
 		for _, t := range tagIface {
 			if ts, ok := t.(string); ok {
