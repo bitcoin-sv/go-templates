@@ -22,7 +22,7 @@ func TestCreatePost(t *testing.T) {
 			Data:      []byte("# Hello BSV\nThis is a test post"),
 		},
 		Action: Action{
-			Type: "post",
+			Type: TypePostReply,
 		},
 	}
 
@@ -98,7 +98,7 @@ func TestCreateReply(t *testing.T) {
 			Data:      []byte("This is a test reply"),
 		},
 		Action: Action{
-			Type:         "post",
+			Type:         TypePostReply,
 			Context:      ContextTx,
 			ContextValue: testTxID,
 		},

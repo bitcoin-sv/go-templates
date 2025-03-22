@@ -330,7 +330,7 @@ func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, chang
 	mapScript.AppendPushData([]byte("app"))
 	mapScript.AppendPushData([]byte(AppName))
 	mapScript.AppendPushData([]byte("type"))
-	mapScript.AppendPushData([]byte("post")) // Use "post" instead of TypePostReply for the test
+	mapScript.AppendPushData([]byte(string(TypePostReply)))
 	mapScript.AppendPushData([]byte("context"))
 	mapScript.AppendPushData([]byte("tx"))
 	mapScript.AppendPushData([]byte("tx"))
