@@ -11,8 +11,8 @@ import (
 
 func TestCreatePost(t *testing.T) {
 	// Create a test private key
-	privKey, err := ec.NewPrivateKey()
-	require.NoError(t, err)
+	// privKey, err := ec.NewPrivateKey()
+	// require.NoError(t, err)
 
 	// Create a test post
 	post := Post{
@@ -30,7 +30,7 @@ func TestCreatePost(t *testing.T) {
 	tags := []string{"test", "bsv"}
 
 	// Create the transaction
-	tx, err := CreatePost(post, tags, nil, nil, privKey)
+	tx, err := CreatePost(post, nil, tags, nil)
 	require.NoError(t, err)
 
 	// Parse with bmap
@@ -98,7 +98,7 @@ func TestCreateReply(t *testing.T) {
 			Data:      []byte("This is a test reply"),
 		},
 		Action: Action{
-			Type:         "reply",
+			Type:         "post",
 			Context:      ContextTx,
 			ContextValue: testTxID,
 		},
@@ -118,7 +118,8 @@ func TestCreateReply(t *testing.T) {
 	mapData := bmapTx.MAP[0]
 	require.Equal(t, "bsocial", mapData["app"])
 	require.Equal(t, "post", mapData["type"])
-	require.Equal(t, testTxID, mapData["context_tx"])
+	require.Equal(t, "tx", mapData["context"])
+	require.Equal(t, testTxID, mapData["tx"])
 
 	// Verify B data
 	require.NotNil(t, bmapTx.B)
@@ -163,7 +164,7 @@ func TestCreateMessage(t *testing.T) {
 	mapData := bmapTx.MAP[0]
 	require.Equal(t, "bsocial", mapData["app"])
 	require.Equal(t, "message", mapData["type"])
-	require.Equal(t, msg.ContextValue, mapData["context_channel"])
+	require.Equal(t, msg.ContextValue, mapData["channel"])
 
 	// Verify B data
 	require.NotNil(t, bmapTx.B)

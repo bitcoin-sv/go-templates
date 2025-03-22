@@ -6,14 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
-	"github.com/bsv-blockchain/go-sdk/util"
 )
 
 type Pow20 struct {
@@ -222,20 +220,4 @@ func (o *Pow20Unlocker) EstimateLength(tx *transaction.Transaction, inputIndex u
 		len(noncePrefix) + len(o.Nonce) + // push data ownerScript
 		len(preimagePrefix) + len(preimage)) // push data preimage
 
-}
-
-func uint64ToBytes(v uint64) []byte {
-	val := make([]byte, 0, 8)
-	max := binary.BigEndian.AppendUint64([]byte{}, v)
-	for i, b := range max {
-		if i < len(max)-1 && b == 0 && max[i+1]&0x80 == 0 && len(val) == 0 {
-			continue
-		}
-		val = append(val, b)
-	}
-	return util.ReverseBytes(val)
-}
-
-func bytesToUint64(b []byte) uint64 {
-	return big.NewInt(0).SetBytes(util.ReverseBytes(b)).Uint64()
 }
