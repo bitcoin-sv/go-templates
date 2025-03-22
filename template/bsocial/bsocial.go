@@ -303,7 +303,7 @@ func CreatePost(post Post, attachments []bitcom.B, tags []string, identityKey *e
 }
 
 // CreateReply creates a reply to an existing post
-func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, identityKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 
 	// Create B protocol output first
@@ -337,22 +337,42 @@ func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, chang
 	mapScript.AppendPushData([]byte(replyTxID))
 
 	// Add AIP signature
-	mapScript.AppendPushData([]byte("|"))
-	mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
-	mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
-	pubKey := privateKey.PubKey()
-	mapScript.AppendPushData(pubKey.Compressed())
+	if identityKey != nil {
+		mapScript.AppendPushData([]byte("|"))
+		mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
+		mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
+
+		// make a string from the mapScript
+		data := mapScript.String()
+		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		if err != nil {
+			return nil, err
+		}
+		mapScript.AppendPushData([]byte(sig.Signature))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: mapScript,
 		Satoshis:      0,
 	})
 
+	// Add change output if changeAddress is provided
+	if changeAddress != nil {
+		changeScript, err := p2pkh.Lock(changeAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx.AddOutput(&transaction.TransactionOutput{
+			LockingScript: changeScript,
+			Change:        true,
+		})
+	}
+
 	return tx, nil
 }
 
 // CreateLike creates a like transaction
-func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, identityKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
@@ -366,22 +386,44 @@ func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *scrip
 	s.AppendPushData([]byte(string(ContextTx)))
 	s.AppendPushData([]byte(string(ContextTx)))
 	s.AppendPushData([]byte(likeTxID))
-	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(bitcom.AIPPrefix))
-	s.AppendPushData([]byte("BITCOIN_ECDSA"))
-	pubKey := privateKey.PubKey()
-	s.AppendPushData(pubKey.Compressed())
+
+	// Add AIP signature
+	if identityKey != nil {
+		s.AppendPushData([]byte("|"))
+		s.AppendPushData([]byte(bitcom.AIPPrefix))
+		s.AppendPushData([]byte("BITCOIN_ECDSA"))
+
+		// make a string from the script
+		data := s.String()
+		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		if err != nil {
+			return nil, err
+		}
+		s.AppendPushData([]byte(sig.Signature))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: s,
 		Satoshis:      0,
 	})
 
+	// Add change output if changeAddress is provided
+	if changeAddress != nil {
+		changeScript, err := p2pkh.Lock(changeAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx.AddOutput(&transaction.TransactionOutput{
+			LockingScript: changeScript,
+			Change:        true,
+		})
+	}
+
 	return tx, nil
 }
 
 // CreateUnlike creates an unlike transaction
-func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *script.Address, identityKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
@@ -395,22 +437,44 @@ func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *s
 	s.AppendPushData([]byte(string(ContextTx)))
 	s.AppendPushData([]byte(string(ContextTx)))
 	s.AppendPushData([]byte(unlikeTxID))
-	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(bitcom.AIPPrefix))
-	s.AppendPushData([]byte("BITCOIN_ECDSA"))
-	pubKey := privateKey.PubKey()
-	s.AppendPushData(pubKey.Compressed())
+
+	// Add AIP signature
+	if identityKey != nil {
+		s.AppendPushData([]byte("|"))
+		s.AppendPushData([]byte(bitcom.AIPPrefix))
+		s.AppendPushData([]byte("BITCOIN_ECDSA"))
+
+		// make a string from the script
+		data := s.String()
+		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		if err != nil {
+			return nil, err
+		}
+		s.AppendPushData([]byte(sig.Signature))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: s,
 		Satoshis:      0,
 	})
 
+	// Add change output if changeAddress is provided
+	if changeAddress != nil {
+		changeScript, err := p2pkh.Lock(changeAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx.AddOutput(&transaction.TransactionOutput{
+			LockingScript: changeScript,
+			Change:        true,
+		})
+	}
+
 	return tx, nil
 }
 
 // CreateFollow creates a follow transaction
-func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *script.Address, identityKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
@@ -424,11 +488,21 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 	s.AppendPushData([]byte(string(ContextBapID)))
 	s.AppendPushData([]byte(string(ContextBapID)))
 	s.AppendPushData([]byte(followBapID))
-	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(bitcom.AIPPrefix))
-	s.AppendPushData([]byte("BITCOIN_ECDSA"))
-	pubKey := privateKey.PubKey()
-	s.AppendPushData(pubKey.Compressed())
+
+	// Add AIP signature
+	if identityKey != nil {
+		s.AppendPushData([]byte("|"))
+		s.AppendPushData([]byte(bitcom.AIPPrefix))
+		s.AppendPushData([]byte("BITCOIN_ECDSA"))
+
+		// make a string from the script
+		data := s.String()
+		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		if err != nil {
+			return nil, err
+		}
+		s.AppendPushData([]byte(sig.Signature))
+	}
 
 	// Add action output
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -452,7 +526,7 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 }
 
 // CreateUnfollow creates an unfollow transaction
-func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddress *script.Address, identityKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
@@ -466,22 +540,44 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 	s.AppendPushData([]byte(string(ContextBapID)))
 	s.AppendPushData([]byte(string(ContextBapID)))
 	s.AppendPushData([]byte(unfollowBapID))
-	s.AppendPushData([]byte("|"))
-	s.AppendPushData([]byte(bitcom.AIPPrefix))
-	s.AppendPushData([]byte("BITCOIN_ECDSA"))
-	pubKey := privateKey.PubKey()
-	s.AppendPushData(pubKey.Compressed())
+
+	// Add AIP signature
+	if identityKey != nil {
+		s.AppendPushData([]byte("|"))
+		s.AppendPushData([]byte(bitcom.AIPPrefix))
+		s.AppendPushData([]byte("BITCOIN_ECDSA"))
+
+		// make a string from the script
+		data := s.String()
+		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		if err != nil {
+			return nil, err
+		}
+		s.AppendPushData([]byte(sig.Signature))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: s,
 		Satoshis:      0,
 	})
 
+	// Add change output if changeAddress is provided
+	if changeAddress != nil {
+		changeScript, err := p2pkh.Lock(changeAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx.AddOutput(&transaction.TransactionOutput{
+			LockingScript: changeScript,
+			Change:        true,
+		})
+	}
+
 	return tx, nil
 }
 
 // CreateMessage creates a new message transaction
-func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *script.Address, privateKey *ec.PrivateKey) (*transaction.Transaction, error) {
+func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *script.Address, identityKey *ec.PrivateKey) (*transaction.Transaction, error) {
 	tx := transaction.NewTransaction()
 
 	// Create B protocol output first
@@ -519,16 +615,36 @@ func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *sc
 	}
 
 	// Add AIP signature
-	mapScript.AppendPushData([]byte("|"))
-	mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
-	mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
-	pubKey := privateKey.PubKey()
-	mapScript.AppendPushData(pubKey.Compressed())
+	if identityKey != nil {
+		mapScript.AppendPushData([]byte("|"))
+		mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
+		mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
+
+		// make a string from the mapScript
+		data := mapScript.String()
+		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		if err != nil {
+			return nil, err
+		}
+		mapScript.AppendPushData([]byte(sig.Signature))
+	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: mapScript,
 		Satoshis:      0,
 	})
+
+	// Add change output if changeAddress is provided
+	if changeAddress != nil {
+		changeScript, err := p2pkh.Lock(changeAddress)
+		if err != nil {
+			return nil, err
+		}
+		tx.AddOutput(&transaction.TransactionOutput{
+			LockingScript: changeScript,
+			Change:        true,
+		})
+	}
 
 	return tx, nil
 }
