@@ -86,22 +86,22 @@ func Decode(scr *script.Script) *Inscription {
 
 func (i *Inscription) Lock() *script.Script {
 	s := script.NewFromBytes(i.ScriptPrefix)
-	s.AppendOpcodes(script.Op0, script.OpIF)
-	s.AppendPushData([]byte("ord"))
-	s.AppendOpcodes(script.Op1)
-	s.AppendPushData(i.File.Content)
+	_ = s.AppendOpcodes(script.Op0, script.OpIF)
+	_ = s.AppendPushData([]byte("ord"))
+	_ = s.AppendOpcodes(script.Op1)
+	_ = s.AppendPushData(i.File.Content)
 	if i.Parent != nil {
-		s.AppendOpcodes(script.Op3)
-		s.AppendPushData(i.Parent.Bytes())
+		_ = s.AppendOpcodes(script.Op3)
+		_ = s.AppendPushData(i.Parent.Bytes())
 	}
 	if i.Bitcom != nil {
 		for k, v := range i.Bitcom {
-			s.AppendPushData([]byte(k))
-			s.AppendPushData(v)
+			_ = s.AppendPushData([]byte(k))
+			_ = s.AppendPushData(v)
 		}
 	}
-	s.AppendOpcodes(script.Op0)
-	s.AppendPushData(i.File.Content)
-	s.AppendOpcodes(script.OpENDIF)
+	_ = s.AppendOpcodes(script.Op0)
+	_ = s.AppendPushData(i.File.Content)
+	_ = s.AppendOpcodes(script.OpENDIF)
 	return script.NewFromBytes(append(*s, i.ScriptSuffix...))
 }

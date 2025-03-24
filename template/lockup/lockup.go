@@ -45,8 +45,8 @@ func Decode(scr *script.Script, mainnet bool) *Lock {
 
 func (l Lock) Lock() *script.Script {
 	s := script.NewFromBytes(LockPrefix)
-	s.AppendPushData(l.Address.PublicKeyHash)
-	s.AppendPushData((&interpreter.ScriptNumber{
+	_ = s.AppendPushData(l.Address.PublicKeyHash)
+	_ = s.AppendPushData((&interpreter.ScriptNumber{
 		Val:          big.NewInt(int64(l.Until)),
 		AfterGenesis: true,
 	}).Bytes())
@@ -67,7 +67,7 @@ func (lu LockUnlocker) Sign(tx *transaction.Transaction, inputIndex uint32) (*sc
 	} else if preimage, err := tx.CalcInputPreimage(inputIndex, *lu.SigHashFlag); err != nil {
 		return nil, err
 	} else {
-		s.AppendPushData(preimage)
+		_ = s.AppendPushData(preimage)
 		return s, nil
 	}
 }

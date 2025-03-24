@@ -30,32 +30,42 @@ type Map struct {
 // DecodeMap decodes the map data from the transaction script
 func DecodeMap(scr script.Script) *Map {
 	pos := &ZERO
+	var op *script.ScriptChunk
+	var err error
 
-	if op, err := scr.ReadOp(pos); err != nil {
+	if op, err = scr.ReadOp(pos); err != nil {
 		return nil
-	} else {
-		m := &Map{
-			Cmd:  MapCmd(op.Data),
-			Data: make(map[string]string),
-		}
-		if m.Cmd == MapCmdSet {
-			for {
-				prevIdx := *pos
-				op, err = scr.ReadOp(pos)
-				opKey := strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
-				prevIdx = *pos
-				if op, err = scr.ReadOp(pos); err != nil {
-					*pos = prevIdx
-					break
-				}
-
-				if !utf8.Valid([]byte(opKey)) || !utf8.Valid(op.Data) {
-					continue
-				}
-
-				m.Data[opKey] = strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
-			}
-		}
-		return m
 	}
+
+	m := &Map{
+		Cmd:  MapCmd(op.Data),
+		Data: make(map[string]string),
+	}
+
+	if m.Cmd == MapCmdSet {
+		for {
+			// Save position to revert if needed
+			keyPos := *pos
+
+			// Try to read key
+			if op, err = scr.ReadOp(pos); err != nil {
+				break
+			}
+			opKey := strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
+
+			// Try to read value
+			if op, err = scr.ReadOp(pos); err != nil {
+				// Couldn't read value, revert to position before key and break
+				*pos = keyPos
+				break
+			}
+
+			if !utf8.Valid([]byte(opKey)) || !utf8.Valid(op.Data) {
+				continue
+			}
+
+			m.Data[opKey] = strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
+		}
+	}
+	return m
 }

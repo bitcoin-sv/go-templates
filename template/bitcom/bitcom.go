@@ -1,6 +1,8 @@
 package bitcom
 
-import "github.com/bsv-blockchain/go-sdk/script"
+import (
+	"github.com/bsv-blockchain/go-sdk/script"
+)
 
 type Bitcom struct {
 	Protocols    []*BitcomProtocol `json:"protos"`
@@ -46,12 +48,12 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 func (b *Bitcom) Lock() *script.Script {
 	s := script.NewFromBytes(b.ScriptPrefix)
 	if len(b.Protocols) > 0 {
-		s.AppendOpcodes(script.OpRETURN)
+		_ = s.AppendOpcodes(script.OpRETURN)
 		for i, p := range b.Protocols {
-			s.AppendPushData([]byte(p.Protocol))
-			s.AppendPushData(p.Script)
+			_ = s.AppendPushData([]byte(p.Protocol))
+			_ = s.AppendPushData(p.Script)
 			if i < len(b.Protocols)-1 {
-				s.AppendPushData([]byte("|"))
+				_ = s.AppendPushData([]byte("|"))
 			}
 		}
 	}

@@ -10,7 +10,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestVector represents a BSocial test vector
+// Error message templates for consistent error reporting and to avoid linter warnings
+const (
+	// General test error formats
+	ErrMsgActionNotFound   = "Expected to find a %s action for test vector '%s', but none was found"
+	ErrMsgActionFound      = "Expected not to find a %s action for test vector '%s', but found one"
+	ErrMsgNilForTestVector = "Expected %s to be nil for test vector '%s'"
+	ErrMsgDecodeFailure    = "Failed to decode %s for test vector '%s'"
+
+	// Value comparison error formats
+	ErrMsgWrongType        = "Expected action type '%s' but found '%s' for test vector '%s'"
+	ErrMsgWrongContextType = "Expected context_type '%s' but got '%s' for test vector '%s'"
+	ErrMsgWrongPostTx      = "Expected post_tx '%s' but got '%s' for test vector '%s'"
+	ErrMsgWrongBapID       = "Expected bap_id '%s' but got '%s' for test vector '%s'"
+	ErrMsgWrongChannel     = "Expected channel '%s' but got '%s' for test vector '%s'"
+	ErrMsgWrongContent     = "Expected content '%s' but got '%s' for test vector '%s'"
+)
+
+// TestVector represents a single BSocial test case with expected outcomes
 type TestVector struct {
 	Name           string                 `json:"name"`
 	Description    string                 `json:"description"`
@@ -18,14 +35,14 @@ type TestVector struct {
 	Expected       map[string]interface{} `json:"expected"`
 }
 
-// TestVectors represents a collection of BSocial test vectors
+// TestVectors represents a collection of BSocial test cases
 type TestVectors struct {
 	Description string       `json:"description"`
 	Version     string       `json:"version"`
 	Vectors     []TestVector `json:"vectors"`
 }
 
-// LoadTestVectors loads test vectors from a JSON file
+// LoadTestVectors loads and parses test vectors from a JSON file
 func LoadTestVectors(t *testing.T, filePath string) TestVectors {
 	t.Helper()
 
@@ -41,7 +58,7 @@ func LoadTestVectors(t *testing.T, filePath string) TestVectors {
 	return vectors
 }
 
-// GetTransactionFromVector parses a raw transaction from a test vector
+// GetTransactionFromVector loads a transaction from a file based on the txid in the test vector
 func GetTransactionFromVector(t *testing.T, vector TestVector) *transaction.Transaction {
 	t.Helper()
 
@@ -65,19 +82,19 @@ func GetTransactionFromVector(t *testing.T, vector TestVector) *transaction.Tran
 		return nil
 	}
 
-	// Convert to string
+	// Clean up the hex data
 	rawTx := string(data)
 	rawTx = strings.TrimSuffix(rawTx, "%")  // Remove trailing %
 	rawTx = strings.TrimSuffix(rawTx, "\n") // Remove newline
 	t.Logf("Read transaction hex from file, length: %d characters", len(rawTx))
 
-	// Skip if still empty
+	// Skip if empty
 	if rawTx == "" {
 		t.Skipf("Skipping test vector '%s' because raw transaction is empty", vector.Name)
 		return nil
 	}
 
-	// Print the first 50 characters of the raw transaction for debugging
+	// Log the beginning of the transaction hex for diagnostic purposes
 	if len(rawTx) > 50 {
 		t.Logf("Transaction hex starts with: %s...", rawTx[:50])
 	} else {
@@ -91,7 +108,7 @@ func GetTransactionFromVector(t *testing.T, vector TestVector) *transaction.Tran
 		return nil
 	}
 
-	// Debug transaction info
+	// Log transaction structure for diagnostic purposes
 	t.Logf("Transaction parsed successfully. Number of outputs: %d", len(tx.Outputs))
 	for i, output := range tx.Outputs {
 		if output.LockingScript != nil {

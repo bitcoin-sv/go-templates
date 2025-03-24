@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestCreatePost verifies the Post creation functionality
 func TestCreatePost(t *testing.T) {
 	// Create a test private key
 	// privKey, err := ec.NewPrivateKey()
@@ -37,14 +38,14 @@ func TestCreatePost(t *testing.T) {
 	bmapTx, err := bmap.NewFromRawTxString(tx.String())
 	require.NoError(t, err)
 
-	// Print the MAP entries for debugging
+	// Log MAP entries for diagnostic purposes
 	t.Logf("MAP Entries: %+v", bmapTx.MAP)
 
 	// Verify MAP data
 	require.NotNil(t, bmapTx.MAP)
 	require.GreaterOrEqual(t, len(bmapTx.MAP), 1)
 
-	// Simplify the test - just check that we have one or more MAP entries
+	// check that we have one or more MAP entries
 	// and that the B data is correct
 
 	// Verify B data
@@ -57,6 +58,7 @@ func TestCreatePost(t *testing.T) {
 	require.Equal(t, string(post.B.Encoding), bmapTx.B[0].Encoding)
 }
 
+// TestCreateLike verifies the Like creation functionality
 func TestCreateLike(t *testing.T) {
 	// Create a test private key
 	privKey, err := ec.NewPrivateKey()
@@ -82,6 +84,7 @@ func TestCreateLike(t *testing.T) {
 	require.Equal(t, testTxID, mapData["tx"])
 }
 
+// TestCreateReply verifies the Reply creation functionality
 func TestCreateReply(t *testing.T) {
 	// Create a test private key
 	privKey, err := ec.NewPrivateKey()
@@ -131,6 +134,7 @@ func TestCreateReply(t *testing.T) {
 	require.Equal(t, string(reply.B.Encoding), bmapTx.B[0].Encoding)
 }
 
+// TestCreateMessage verifies the Message creation functionality
 func TestCreateMessage(t *testing.T) {
 	// Create a test private key
 	privKey, err := ec.NewPrivateKey()
@@ -174,6 +178,7 @@ func TestCreateMessage(t *testing.T) {
 	require.Equal(t, string(msg.B.Encoding), bmapTx.B[0].Encoding)
 }
 
+// TestCreateFollow verifies the Follow creation functionality
 func TestCreateFollow(t *testing.T) {
 	// Create a test private key
 	privKey, err := ec.NewPrivateKey()
@@ -199,6 +204,7 @@ func TestCreateFollow(t *testing.T) {
 	require.Equal(t, testBapID, mapData["bapID"])
 }
 
+// TestCreateUnfollow verifies the Unfollow creation functionality
 func TestCreateUnfollow(t *testing.T) {
 	// Create a test private key
 	privKey, err := ec.NewPrivateKey()
@@ -224,6 +230,7 @@ func TestCreateUnfollow(t *testing.T) {
 	require.Equal(t, testBapID, mapData["bapID"])
 }
 
+// TestCreateUnlike verifies the Unlike creation functionality
 func TestCreateUnlike(t *testing.T) {
 	// Create a test private key
 	privKey, err := ec.NewPrivateKey()
@@ -249,6 +256,7 @@ func TestCreateUnlike(t *testing.T) {
 	require.Equal(t, testTxID, mapData["tx"])
 }
 
+// TestDecodeTransaction verifies the transaction parsing functionality
 func TestDecodeTransaction(t *testing.T) {
 	// Create a test post with App field set
 	post := Post{
@@ -267,7 +275,7 @@ func TestDecodeTransaction(t *testing.T) {
 	tx, err := CreatePost(post, nil, []string{"test"}, nil)
 	require.NoError(t, err)
 
-	// Print transaction for debugging
+	// Log transaction for diagnostic purposes
 	t.Logf("Transaction created: %s", tx.String())
 
 	// Parse with bmap to verify content
@@ -276,8 +284,7 @@ func TestDecodeTransaction(t *testing.T) {
 	t.Logf("MAP Entries from bmap: %+v", bmapTx.MAP)
 	t.Logf("B Entries from bmap: %+v", bmapTx.B)
 
-	// Since there's an issue with DecodeTransaction, let's create our own BSocial object instead
-	// to test the IsEmpty function
+	// Since there's an issue with DecodeTransaction, we test IsEmpty function with a manual BSocial object
 	bsocial := &BSocial{
 		Post: &Post{
 			Action: Action{
@@ -307,8 +314,8 @@ func TestDecodeTransaction(t *testing.T) {
 	require.True(t, emptyBSocial.IsEmpty())
 }
 
-// testBSocialFromVectors tests parsing BSocial actions from test vectors
-// This is a generic function that can test any type of BSocial action
+// testBSocialFromVectors is a generic test function that validates BSocial actions
+// extracted from test vectors against expected values
 func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 	// Load the test vectors
 	vectors := LoadTestVectors(t, filePath)
@@ -322,11 +329,9 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 				return // Skip if transaction is nil
 			}
 
-			// expect the txid to be in the vector
+			// Verify transaction ID matches expected value
 			require.Contains(t, vector.Expected, "tx_id")
 			txID := vector.Expected["tx_id"].(string)
-
-			// Use tx.TxID().String() to get the transaction ID
 			require.Equal(t, txID, tx.TxID().String())
 
 			// Try to decode with bsocial first
@@ -386,17 +391,16 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 				}
 
 				if shouldFail {
-					require.False(t, foundAction, "Expected not to find a %s action for test vector '%s', but found one", actionType, vector.Name)
+					require.False(t, foundAction, ErrMsgActionFound, actionType, vector.Name)
 					return
 				}
 
 				// Otherwise expect to find an action
-				require.True(t, foundAction, "Expected to find a %s action for test vector '%s', but none was found", actionType, vector.Name)
+				require.True(t, foundAction, ErrMsgActionNotFound, actionType, vector.Name)
 
 				// Check if the expected type matches what we found
 				if expectedType, ok := vector.Expected["type"].(string); ok {
-					require.Equal(t, expectedType, detectedType,
-						"Expected action type '%s' but found '%s' for test vector '%s'",
+					require.Equal(t, expectedType, detectedType, ErrMsgWrongType,
 						expectedType, detectedType, vector.Name)
 				}
 
@@ -404,20 +408,17 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 				switch actionType {
 				case "like", "unlike", "post":
 					if postTx, ok := vector.Expected["post_tx"].(string); ok && postTx != "" {
-						require.Equal(t, postTx, contextValue,
-							"Expected post_tx '%s' but got '%s' for test vector '%s'",
+						require.Equal(t, postTx, contextValue, ErrMsgWrongPostTx,
 							postTx, contextValue, vector.Name)
 					}
 				case "follow", "unfollow":
 					if bapID, ok := vector.Expected["bap_id"].(string); ok && bapID != "" {
-						require.Equal(t, bapID, contextValue,
-							"Expected bap_id '%s' but got '%s' for test vector '%s'",
+						require.Equal(t, bapID, contextValue, ErrMsgWrongBapID,
 							bapID, contextValue, vector.Name)
 					}
 				case "message":
 					if channel, ok := vector.Expected["channel"].(string); ok && channel != "" {
-						require.Equal(t, channel, contextValue,
-							"Expected channel '%s' but got '%s' for test vector '%s'",
+						require.Equal(t, channel, contextValue, ErrMsgWrongChannel,
 							channel, contextValue, vector.Name)
 					}
 				}
@@ -461,21 +462,21 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 				// If should fail, we expect the relevant field to be nil
 				switch actionType {
 				case "like":
-					require.Nil(t, bsocial.Like, "Expected Like to be nil for test vector '%s'", vector.Name)
+					require.Nil(t, bsocial.Like, ErrMsgNilForTestVector, "Like", vector.Name)
 				case "unlike":
-					require.Nil(t, bsocial.Unlike, "Expected Unlike to be nil for test vector '%s'", vector.Name)
+					require.Nil(t, bsocial.Unlike, ErrMsgNilForTestVector, "Unlike", vector.Name)
 				case "post":
 					if vector.Expected["has_reply"] == true {
-						require.Nil(t, bsocial.Reply, "Expected Reply to be nil for test vector '%s'", vector.Name)
+						require.Nil(t, bsocial.Reply, ErrMsgNilForTestVector, "Reply", vector.Name)
 					} else {
-						require.Nil(t, bsocial.Post, "Expected Post to be nil for test vector '%s'", vector.Name)
+						require.Nil(t, bsocial.Post, ErrMsgNilForTestVector, "Post", vector.Name)
 					}
 				case "follow":
-					require.Nil(t, bsocial.Follow, "Expected Follow to be nil for test vector '%s'", vector.Name)
+					require.Nil(t, bsocial.Follow, ErrMsgNilForTestVector, "Follow", vector.Name)
 				case "unfollow":
-					require.Nil(t, bsocial.Unfollow, "Expected Unfollow to be nil for test vector '%s'", vector.Name)
+					require.Nil(t, bsocial.Unfollow, ErrMsgNilForTestVector, "Unfollow", vector.Name)
 				case "message":
-					require.Nil(t, bsocial.Message, "Expected Message to be nil for test vector '%s'", vector.Name)
+					require.Nil(t, bsocial.Message, ErrMsgNilForTestVector, "Message", vector.Name)
 				}
 				return
 			}
@@ -483,76 +484,65 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 			// Otherwise, the relevant field should be non-nil
 			switch actionType {
 			case "like":
-				require.NotNil(t, bsocial.Like, "Failed to decode like action for test vector '%s'", vector.Name)
+				require.NotNil(t, bsocial.Like, ErrMsgDecodeFailure, "like action", vector.Name)
 				if contextType, ok := vector.Expected["context_type"].(string); ok {
-					require.Equal(t, Context(contextType), bsocial.Like.Context,
-						"Expected context_type '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, Context(contextType), bsocial.Like.Context, ErrMsgWrongContextType,
 						contextType, bsocial.Like.Context, vector.Name)
 				}
 				if postTx, ok := vector.Expected["post_tx"].(string); ok && postTx != "" {
-					require.Equal(t, postTx, bsocial.Like.ContextValue,
-						"Expected post_tx '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, postTx, bsocial.Like.ContextValue, ErrMsgWrongPostTx,
 						postTx, bsocial.Like.ContextValue, vector.Name)
 				}
 			case "unlike":
-				require.NotNil(t, bsocial.Unlike, "Failed to decode unlike action for test vector '%s'", vector.Name)
+				require.NotNil(t, bsocial.Unlike, ErrMsgDecodeFailure, "unlike action", vector.Name)
 				if contextType, ok := vector.Expected["context_type"].(string); ok {
-					require.Equal(t, Context(contextType), bsocial.Unlike.Context,
-						"Expected context_type '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, Context(contextType), bsocial.Unlike.Context, ErrMsgWrongContextType,
 						contextType, bsocial.Unlike.Context, vector.Name)
 				}
 				if postTx, ok := vector.Expected["post_tx"].(string); ok && postTx != "" {
-					require.Equal(t, postTx, bsocial.Unlike.ContextValue,
-						"Expected post_tx '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, postTx, bsocial.Unlike.ContextValue, ErrMsgWrongPostTx,
 						postTx, bsocial.Unlike.ContextValue, vector.Name)
 				}
 			case "post":
 				if hasReply, ok := vector.Expected["has_reply"].(bool); ok && hasReply {
 					// This is a reply
-					require.NotNil(t, bsocial.Reply, "Failed to decode reply for test vector '%s'", vector.Name)
+					require.NotNil(t, bsocial.Reply, ErrMsgDecodeFailure, "reply", vector.Name)
 					if content, ok := vector.Expected["content"].(string); ok && content != "" {
-						require.Equal(t, content, string(bsocial.Reply.B.Data),
-							"Expected content '%s' but got '%s' for test vector '%s'",
+						require.Equal(t, content, string(bsocial.Reply.B.Data), ErrMsgWrongContent,
 							content, string(bsocial.Reply.B.Data), vector.Name)
 					}
 					if postTx, ok := vector.Expected["post_tx"].(string); ok && postTx != "" {
-						require.Equal(t, postTx, bsocial.Reply.ContextValue,
-							"Expected post_tx '%s' but got '%s' for test vector '%s'",
+						require.Equal(t, postTx, bsocial.Reply.ContextValue, ErrMsgWrongPostTx,
 							postTx, bsocial.Reply.ContextValue, vector.Name)
 					}
 				} else {
 					// This is a regular post
-					require.NotNil(t, bsocial.Post, "Failed to decode post for test vector '%s'", vector.Name)
+					require.NotNil(t, bsocial.Post, ErrMsgDecodeFailure, "post", vector.Name)
 					if content, ok := vector.Expected["content"].(string); ok && content != "" {
-						require.Equal(t, content, string(bsocial.Post.B.Data),
-							"Expected content '%s' but got '%s' for test vector '%s'",
+						require.Equal(t, content, string(bsocial.Post.B.Data), ErrMsgWrongContent,
 							content, string(bsocial.Post.B.Data), vector.Name)
 					}
 				}
 			case "follow":
-				require.NotNil(t, bsocial.Follow, "Failed to decode follow action for test vector '%s'", vector.Name)
+				require.NotNil(t, bsocial.Follow, ErrMsgDecodeFailure, "follow action", vector.Name)
 				if bapID, ok := vector.Expected["bap_id"].(string); ok && bapID != "" {
-					require.Equal(t, bapID, bsocial.Follow.ContextValue,
-						"Expected bap_id '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, bapID, bsocial.Follow.ContextValue, ErrMsgWrongBapID,
 						bapID, bsocial.Follow.ContextValue, vector.Name)
 				}
 			case "unfollow":
-				require.NotNil(t, bsocial.Unfollow, "Failed to decode unfollow action for test vector '%s'", vector.Name)
+				require.NotNil(t, bsocial.Unfollow, ErrMsgDecodeFailure, "unfollow action", vector.Name)
 				if bapID, ok := vector.Expected["bap_id"].(string); ok && bapID != "" {
-					require.Equal(t, bapID, bsocial.Unfollow.ContextValue,
-						"Expected bap_id '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, bapID, bsocial.Unfollow.ContextValue, ErrMsgWrongBapID,
 						bapID, bsocial.Unfollow.ContextValue, vector.Name)
 				}
 			case "message":
-				require.NotNil(t, bsocial.Message, "Failed to decode message for test vector '%s'", vector.Name)
+				require.NotNil(t, bsocial.Message, ErrMsgDecodeFailure, "message", vector.Name)
 				if content, ok := vector.Expected["content"].(string); ok && content != "" {
-					require.Equal(t, content, string(bsocial.Message.B.Data),
-						"Expected content '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, content, string(bsocial.Message.B.Data), ErrMsgWrongContent,
 						content, string(bsocial.Message.B.Data), vector.Name)
 				}
 				if channel, ok := vector.Expected["channel"].(string); ok && channel != "" {
-					require.Equal(t, channel, bsocial.Message.ContextValue,
-						"Expected channel '%s' but got '%s' for test vector '%s'",
+					require.Equal(t, channel, bsocial.Message.ContextValue, ErrMsgWrongChannel,
 						channel, bsocial.Message.ContextValue, vector.Name)
 				}
 			}
@@ -560,32 +550,38 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 	}
 }
 
-// Now implement specific test functions for each action type
+// TestPostFromVectors validates Post actions from test vectors
 func TestPostFromVectors(t *testing.T) {
 	testBSocialFromVectors(t, "testdata/post_test_vectors.json", "post")
 }
 
+// TestReplyFromVectors validates Reply actions from test vectors
+// Note: replies use "post" type with context
 func TestReplyFromVectors(t *testing.T) {
-	testBSocialFromVectors(t, "testdata/reply_test_vectors.json", "post") // replies use "post" type with context
+	testBSocialFromVectors(t, "testdata/reply_test_vectors.json", "post")
 }
 
+// TestFollowFromVectors validates Follow actions from test vectors
 func TestFollowFromVectors(t *testing.T) {
 	testBSocialFromVectors(t, "testdata/follow_test_vectors.json", "follow")
 }
 
+// TestUnfollowFromVectors validates Unfollow actions from test vectors
 func TestUnfollowFromVectors(t *testing.T) {
 	testBSocialFromVectors(t, "testdata/unfollow_test_vectors.json", "unfollow")
 }
 
+// TestMessageFromVectors validates Message actions from test vectors
 func TestMessageFromVectors(t *testing.T) {
 	testBSocialFromVectors(t, "testdata/message_test_vectors.json", "message")
 }
 
-// Updated TestLikeFromVectors to use the generic function
+// TestLikeFromVectors validates Like actions from test vectors
 func TestLikeFromVectors(t *testing.T) {
 	testBSocialFromVectors(t, "testdata/like_test_vectors.json", "like")
 }
 
+// TestUnlikeFromVectors validates Unlike actions from test vectors
 func TestUnlikeFromVectors(t *testing.T) {
 	testBSocialFromVectors(t, "testdata/unlike_test_vectors.json", "unlike")
 }

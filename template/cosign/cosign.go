@@ -20,11 +20,11 @@ func Lock(a *script.Address, pubkey *ec.PublicKey) (*script.Script, error) {
 	}
 	scr := script.Script(make([]byte, 0, 59))
 	s := &scr
-	s.AppendOpcodes(script.OpDUP, script.OpHASH160)
-	s.AppendPushData(a.PublicKeyHash)
-	s.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIGVERIFY)
-	s.AppendPushData(pubkey.Compressed())
-	s.AppendOpcodes(script.OpCHECKSIG)
+	_ = s.AppendOpcodes(script.OpDUP, script.OpHASH160)
+	_ = s.AppendPushData(a.PublicKeyHash)
+	_ = s.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIGVERIFY)
+	_ = s.AppendPushData(pubkey.Compressed())
+	_ = s.AppendOpcodes(script.OpCHECKSIG)
 	return s, nil
 }
 

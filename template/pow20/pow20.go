@@ -96,7 +96,7 @@ func (p *Pow20) BuildUnlockTx(nonce []byte, recipient *script.Address, changeAdd
 	}
 
 	txid, _ := chainhash.NewHash(p.Txid)
-	tx.AddInputsFromUTXOs(&transaction.UTXO{
+	_ = tx.AddInputsFromUTXOs(&transaction.UTXO{
 		TxID:                    txid,
 		Vout:                    p.Vout,
 		LockingScript:           p.LockingScript,
@@ -113,9 +113,9 @@ func (p *Pow20) BuildUnlockTx(nonce []byte, recipient *script.Address, changeAdd
 		})
 	}
 	rewardScript := BuildInscription(p.Id, p.Reward)
-	rewardScript.AppendOpcodes(script.OpDUP, script.OpHASH160)
-	rewardScript.AppendPushData(recipient.PublicKeyHash)
-	rewardScript.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIG)
+	_ = rewardScript.AppendOpcodes(script.OpDUP, script.OpHASH160)
+	_ = rewardScript.AppendPushData(recipient.PublicKeyHash)
+	_ = rewardScript.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIG)
 	tx.AddOutput(&transaction.TransactionOutput{
 		LockingScript: rewardScript,
 		Satoshis:      1,
@@ -134,34 +134,34 @@ func (p *Pow20) BuildUnlockTx(nonce []byte, recipient *script.Address, changeAdd
 func BuildInscription(id string, amt uint64) *script.Script {
 	transferJSON := fmt.Sprintf(`{"p":"bsv-20","op":"transfer","id":"%s","amt":"%d"}`, id, amt)
 	lockingScript := script.NewFromBytes([]byte{})
-	lockingScript.AppendOpcodes(script.OpFALSE, script.OpIF)
-	lockingScript.AppendPushData([]byte("ord"))
-	lockingScript.AppendOpcodes(script.Op1)
-	lockingScript.AppendPushData([]byte("application/bsv-20"))
-	lockingScript.AppendOpcodes(script.Op0)
-	lockingScript.AppendPushData([]byte(transferJSON))
-	lockingScript.AppendOpcodes(script.OpENDIF)
+	_ = lockingScript.AppendOpcodes(script.OpFALSE, script.OpIF)
+	_ = lockingScript.AppendPushData([]byte("ord"))
+	_ = lockingScript.AppendOpcodes(script.Op1)
+	_ = lockingScript.AppendPushData([]byte("application/bsv-20"))
+	_ = lockingScript.AppendOpcodes(script.Op0)
+	_ = lockingScript.AppendPushData([]byte(transferJSON))
+	_ = lockingScript.AppendOpcodes(script.OpENDIF)
 	return lockingScript
 }
 
 func (p *Pow20) Lock(supply uint64) *script.Script {
 	s := BuildInscription(p.Id, supply)
 	s = script.NewFromBytes(append(*s, *pow20Prefix...))
-	s.AppendPushData([]byte(p.Symbol))
-	s.AppendPushData(uint64ToBytes(p.Max))
+	_ = s.AppendPushData([]byte(p.Symbol))
+	_ = s.AppendPushData(uint64ToBytes(p.Max))
 	if p.Dec <= 16 {
-		s.AppendOpcodes(byte(p.Dec + 0x50))
+		_ = s.AppendOpcodes(byte(p.Dec + 0x50))
 	} else {
-		s.AppendPushData([]byte{p.Dec})
+		_ = s.AppendPushData([]byte{p.Dec})
 	}
-	s.AppendPushData(uint64ToBytes(p.Reward))
-	s.AppendOpcodes(p.Difficulty + 0x50)
+	_ = s.AppendPushData(uint64ToBytes(p.Reward))
+	_ = s.AppendOpcodes(p.Difficulty + 0x50)
 	s = script.NewFromBytes(append(*s, *pow20Suffix...))
 
 	state := script.NewFromBytes([]byte{})
-	state.AppendOpcodes(script.OpRETURN, script.OpFALSE)
-	state.AppendPushData([]byte(p.Id))
-	state.AppendPushData(uint64ToBytes(supply))
+	_ = state.AppendOpcodes(script.OpRETURN, script.OpFALSE)
+	_ = state.AppendPushData([]byte(p.Id))
+	_ = state.AppendPushData(uint64ToBytes(supply))
 	stateSize := uint32(len(*state) - 1)
 	stateScript := binary.LittleEndian.AppendUint32(*state, stateSize)
 	stateScript = append(stateScript, 0x00)
@@ -185,12 +185,12 @@ func (p *Pow20Unlocker) Sign(tx *transaction.Transaction, inputIndex uint32) (*s
 	unlockScript := &script.Script{}
 
 	// pow := o.Mine(o.Char)
-	unlockScript.AppendPushData(p.Recipient.PublicKeyHash)
-	unlockScript.AppendPushData([]byte(p.Nonce))
+	_ = unlockScript.AppendPushData(p.Recipient.PublicKeyHash)
+	_ = unlockScript.AppendPushData([]byte(p.Nonce))
 	if preimage, err := tx.CalcInputPreimage(inputIndex, sighash.All|sighash.AnyOneCanPayForkID); err != nil {
 		return nil, err
 	} else {
-		unlockScript.AppendPushData(preimage)
+		_ = unlockScript.AppendPushData(preimage)
 	}
 	var change *transaction.TransactionOutput
 	for _, output := range tx.Outputs {
@@ -202,10 +202,10 @@ func (p *Pow20Unlocker) Sign(tx *transaction.Transaction, inputIndex uint32) (*s
 		}
 	}
 	if change != nil {
-		unlockScript.AppendPushData(uint64ToBytes(change.Satoshis))
-		unlockScript.AppendPushData((*change.LockingScript)[3:23])
+		_ = unlockScript.AppendPushData(uint64ToBytes(change.Satoshis))
+		_ = unlockScript.AppendPushData((*change.LockingScript)[3:23])
 	} else {
-		unlockScript.AppendOpcodes(script.Op0, script.Op0)
+		_ = unlockScript.AppendOpcodes(script.Op0, script.Op0)
 	}
 
 	return unlockScript, nil
