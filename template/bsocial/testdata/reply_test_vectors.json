@@ -1,0 +1,24 @@
+{
+  "description": "BSocial Reply Test Vectors",
+  "vectors": [
+    {
+      "name": "reply_basic_1",
+      "description": "Reply action from on-chain data",
+      "expected": {
+        "has_reply": true,
+        "context_type": "tx",
+        "tx_id": "8ca367aadc788d4f792b78f10577427840f2c31aae7cf9ffec9b327a79c883ef",
+        "post_tx": "38c914d2c47c2ff063cf9f5705e3ceaa557aca4092ed5047177d5e8f913c0b69",
+        "type": "post"
+      }
+    },
+    {
+      "name": "invalid_reply",
+      "description": "Transaction that is not a reply action",
+      "expected": {
+        "tx_id": "266c2a52d7d1f30709c847424d8195eeef8a0172f190be6244e5c8a1c2e44d94",
+        "wrong_app": true
+      }
+    }
+  ]
+} 

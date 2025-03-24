@@ -1,6 +1,8 @@
 package bsocial
 
 import (
+	"fmt"
+
 	"github.com/bitcoin-sv/go-templates/template/bitcom"
 	"github.com/bitcoin-sv/go-templates/template/p2pkh"
 	"github.com/bitcoinschema/go-aip"
@@ -82,42 +84,72 @@ type BSocial struct {
 func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
 	bsocial = &BSocial{}
 
-	for _, output := range tx.Outputs {
+	// Print debug information
+	fmt.Printf("Decoding transaction with %d outputs\n", len(tx.Outputs))
+
+	for i, output := range tx.Outputs {
+		fmt.Printf("Processing output #%d\n", i)
+		if output.LockingScript == nil {
+			fmt.Printf("Output #%d has nil LockingScript\n", i)
+			continue
+		}
+
 		if bc := bitcom.Decode(output.LockingScript); bc != nil {
+			fmt.Printf("Output #%d contains BitCom data with %d protocols\n", i, len(bc.Protocols))
 			processProtocols(bc, output.LockingScript, bsocial)
 		}
 	}
 
 	// If bsocial is empty (no fields set), return nil
 	if bsocial.IsEmpty() {
+		fmt.Println("BSocial object is empty, returning nil")
 		return nil
 	}
 
+	fmt.Println("BSocial object created successfully")
 	return
 }
 
 // processProtocols processes all bitcom protocols in the script
 func processProtocols(bc *bitcom.Bitcom, script *script.Script, bsocial *BSocial) {
-	for _, proto := range bc.Protocols {
+	fmt.Printf("Processing %d protocols\n", len(bc.Protocols))
+
+	for i, proto := range bc.Protocols {
+		fmt.Printf("Protocol #%d: %s\n", i, proto.Protocol)
+
 		switch proto.Protocol {
 		case bitcom.MapPrefix:
+			fmt.Printf("Found MAP protocol\n")
 			if m := bitcom.DecodeMap(proto.Script); m != nil {
+				fmt.Printf("MAP data decoded: %+v\n", m.Data)
 				processMapData(m, bsocial)
+			} else {
+				fmt.Printf("Failed to decode MAP data\n")
 			}
 		case bitcom.BPrefix:
+			fmt.Printf("Found B protocol\n")
 			if b := bitcom.DecodeB(script); b != nil {
+				fmt.Printf("B data decoded: MediaType=%s, Encoding=%s, DataLength=%d\n",
+					b.MediaType, b.Encoding, len(b.Data))
 				bsocial.Attachments = append(bsocial.Attachments, *b)
+			} else {
+				fmt.Printf("Failed to decode B data\n")
 			}
+		default:
+			fmt.Printf("Unknown protocol: %s\n", proto.Protocol)
 		}
 	}
 }
 
 // processMapData processes MAP protocol data based on action type
 func processMapData(m *bitcom.Map, bsocial *BSocial) {
+	fmt.Printf("Processing MAP data: app=%s, type=%s\n", m.Data["app"], m.Data["type"])
+
 	// Check for tags in MAP data
 	if m.Data["app"] == AppName && m.Data["type"] == "post" {
 		// Try to extract tags if present
 		if tagsField, exists := m.Data["tags"]; exists {
+			fmt.Printf("Found tags field: %v\n", tagsField)
 			processTags(bsocial, tagsField)
 			return
 		}
@@ -129,12 +161,14 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			// Check if this is a reply (has a context_tx) or a regular post
 			if _, exists := m.Data["tx"]; exists {
 				// This is a reply
+				fmt.Printf("Creating a Reply object\n")
 				bs.Reply = &Reply{
 					B:      createB(m),
 					Action: createAction(TypePostReply, m),
 				}
 			} else {
 				// This is a regular post
+				fmt.Printf("Creating a Post object\n")
 				bs.Post = &Post{
 					B:      createB(m),
 					Action: createAction(TypePostReply, m),
@@ -142,6 +176,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			}
 		},
 		TypeLike: func(m *bitcom.Map, bs *BSocial) {
+			fmt.Printf("Creating a Like object with tx=%s\n", m.Data["tx"])
 			bs.Like = &Like{
 				Action: Action{
 					Type:         TypeLike,
@@ -151,6 +186,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			}
 		},
 		TypeUnlike: func(m *bitcom.Map, bs *BSocial) {
+			fmt.Printf("Creating an Unlike object with tx=%s\n", m.Data["tx"])
 			bs.Unlike = &Unlike{
 				Action: Action{
 					Type:         TypeUnlike,
@@ -160,6 +196,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			}
 		},
 		TypeFollow: func(m *bitcom.Map, bs *BSocial) {
+			fmt.Printf("Creating a Follow object with bapID=%s\n", m.Data["bapID"])
 			bs.Follow = &Follow{
 				Action: Action{
 					Type:         TypeFollow,
@@ -169,6 +206,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			}
 		},
 		TypeUnfollow: func(m *bitcom.Map, bs *BSocial) {
+			fmt.Printf("Creating an Unfollow object with bapID=%s\n", m.Data["bapID"])
 			bs.Unfollow = &Unfollow{
 				Action: Action{
 					Type:         TypeUnfollow,
@@ -178,6 +216,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			}
 		},
 		TypeMessage: func(m *bitcom.Map, bs *BSocial) {
+			fmt.Printf("Creating a Message object\n")
 			bs.Message = &Message{
 				B:      createB(m),
 				Action: createAction(TypeMessage, m),
@@ -187,9 +226,15 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 
 	// Execute the appropriate handler if one exists for this action type
 	if actionType := BSocialType(m.Data["type"]); actionType != "" {
+		fmt.Printf("Looking for handler for action type: %s\n", actionType)
 		if handler, exists := handlers[actionType]; exists {
+			fmt.Printf("Handler found for action type: %s\n", actionType)
 			handler(m, bsocial)
+		} else {
+			fmt.Printf("No handler found for action type: %s\n", actionType)
 		}
+	} else {
+		fmt.Printf("No action type found in MAP data\n")
 	}
 }
 

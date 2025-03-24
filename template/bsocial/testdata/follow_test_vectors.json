@@ -1,0 +1,13 @@
+{
+  "description": "BSocial Follow Test Vectors",
+  "vectors": [
+    {
+      "name": "invalid_follow",
+      "description": "Transaction that is not a follow action (it's a post)",
+      "expected": {
+        "should_fail": true,
+        "tx_id": "266c2a52d7d1f30709c847424d8195eeef8a0172f190be6244e5c8a1c2e44d94" 
+      }
+    }
+  ]
+} 
