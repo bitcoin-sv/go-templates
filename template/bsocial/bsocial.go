@@ -93,7 +93,7 @@ func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
 		}
 
 		if bc := bitcom.Decode(output.LockingScript); bc != nil {
-			processProtocols(bc, output.LockingScript, bsocial)
+			processProtocols(bc, bsocial)
 		}
 	}
 
@@ -106,15 +106,15 @@ func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
 }
 
 // processProtocols extracts and processes BitCom protocol data
-func processProtocols(bc *bitcom.Bitcom, script *script.Script, bsocial *BSocial) {
+func processProtocols(bc *bitcom.Bitcom, bsocial *BSocial) {
 	for _, proto := range bc.Protocols {
 		switch proto.Protocol {
 		case bitcom.MapPrefix:
-			if m := bitcom.DecodeMap(proto.Script); m != nil {
+			if m := bitcom.DecodeMapBytes(proto.Script); m != nil {
 				processMapData(m, bsocial)
 			}
 		case bitcom.BPrefix:
-			if b := bitcom.DecodeB(script); b != nil {
+			if b := bitcom.DecodeBBytes(proto.Script); b != nil {
 				bsocial.Attachments = append(bsocial.Attachments, *b)
 			}
 		default:

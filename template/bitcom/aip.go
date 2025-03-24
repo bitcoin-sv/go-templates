@@ -20,6 +20,12 @@ type AIP struct {
 // DecodeAIP decodes the AIP data from the transaction script
 func DecodeAIP(b *Bitcom) []*AIP {
 	aips := []*AIP{}
+	
+	// Safety check for nil
+	if b == nil || len(b.Protocols) == 0 {
+		return aips
+	}
+	
 	for _, proto := range b.Protocols {
 		if proto.Protocol == AIPPrefix {
 

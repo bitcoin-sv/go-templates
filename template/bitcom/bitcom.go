@@ -15,6 +15,13 @@ type BitcomProtocol struct {
 }
 
 func Decode(scr *script.Script) (bitcom *Bitcom) {
+	// Handle nil script safely
+	if scr == nil {
+		return &Bitcom{
+			Protocols: []*BitcomProtocol{},
+		}
+	}
+	
 	pos := findReturn(scr, 0)
 	if pos == -1 {
 		return
@@ -61,6 +68,11 @@ func (b *Bitcom) Lock() *script.Script {
 }
 
 func findReturn(scr *script.Script, pos int) int {
+	// Handle nil script
+	if scr == nil {
+		return -1
+	}
+	
 	for i := pos; i < len(*scr); i++ {
 		if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpRETURN {
 			return i
@@ -70,6 +82,11 @@ func findReturn(scr *script.Script, pos int) int {
 }
 
 func findPipe(scr *script.Script, pos int) int {
+	// Handle nil script
+	if scr == nil {
+		return -1
+	}
+	
 	for i := pos; i < len(*scr); i++ {
 		if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpDATA1 && op.Data[0] == '|' {
 			return i

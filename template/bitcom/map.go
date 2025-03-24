@@ -29,6 +29,11 @@ type Map struct {
 
 // DecodeMap decodes the map data from the transaction script
 func DecodeMap(scr script.Script) *Map {
+	// Only check empty script, actual nil script would have been caught before this
+	if len(scr) == 0 {
+		return nil
+	}
+	
 	pos := &ZERO
 	var op *script.ScriptChunk
 	var err error
@@ -68,4 +73,14 @@ func DecodeMap(scr script.Script) *Map {
 		}
 	}
 	return m
+}
+
+// DecodeMapBytes is a helper function that takes a []byte and converts it to script.Script
+// for compatibility with the bsocial package
+func DecodeMapBytes(b []byte) *Map {
+	if b == nil {
+		return nil
+	}
+	s := script.NewFromBytes(b)
+	return DecodeMap(*s)
 }
