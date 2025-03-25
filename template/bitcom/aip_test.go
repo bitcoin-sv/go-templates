@@ -7,16 +7,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestDecodeAIP verifies the AIP protocol decoding functionality
 func TestDecodeAIP(t *testing.T) {
+	// Reset global state before starting the test
+	resetTestState()
+
 	t.Run("nil bitcom", func(t *testing.T) {
+		// Reset global state before each subtest
+		resetTestState()
+
 		// Test nil Bitcom
 		var nilBitcom *Bitcom
 		result := DecodeAIP(nilBitcom)
 		require.NotNil(t, result, "Result should be an empty slice, not nil")
 		require.Empty(t, result, "Result should be an empty slice for nil Bitcom")
 	})
-	
+
 	t.Run("empty protocols", func(t *testing.T) {
+		// Reset global state before each subtest
+		resetTestState()
+
 		// Test Bitcom with empty protocols
 		emptyBitcom := &Bitcom{
 			Protocols: []*BitcomProtocol{},
@@ -32,7 +42,7 @@ func TestDecodeAIP(t *testing.T) {
 		expected []*AIP
 	}{
 		{
-			name:     "protocols without AIP",
+			name: "protocols without AIP",
 			bitcom: &Bitcom{
 				Protocols: []*BitcomProtocol{
 					{
@@ -176,27 +186,27 @@ func TestDecodeAIP(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := DecodeAIP(tt.bitcom)
-			
+
 			// Debug output for multiple AIP protocols test
 			if tt.name == "multiple AIP protocols" {
 				t.Logf("Expected %d AIPs, got %d AIPs", len(tt.expected), len(result))
 				t.Logf("Result: %+v", result)
 			}
-			
+
 			require.Equal(t, len(tt.expected), len(result))
-			
+
 			if len(tt.expected) > 0 {
 				for i, expectedAIP := range tt.expected {
 					if i >= len(result) {
 						t.Fatalf("Missing expected AIP at index %d", i)
 						continue
 					}
-					
+
 					resultAIP := result[i]
 					require.Equal(t, expectedAIP.Algorithm, resultAIP.Algorithm)
 					require.Equal(t, expectedAIP.Address, resultAIP.Address)
 					require.Equal(t, expectedAIP.Signature, resultAIP.Signature)
-					
+
 					require.Equal(t, len(expectedAIP.FieldIndexes), len(resultAIP.FieldIndexes))
 					for j, expectedIndex := range expectedAIP.FieldIndexes {
 						if j >= len(resultAIP.FieldIndexes) {
@@ -209,4 +219,4 @@ func TestDecodeAIP(t *testing.T) {
 			}
 		})
 	}
-} 
+}

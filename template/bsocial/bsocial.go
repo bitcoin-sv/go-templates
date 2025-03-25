@@ -110,11 +110,11 @@ func processProtocols(bc *bitcom.Bitcom, bsocial *BSocial) {
 	for _, proto := range bc.Protocols {
 		switch proto.Protocol {
 		case bitcom.MapPrefix:
-			if m := bitcom.DecodeMapBytes(proto.Script); m != nil {
+			if m := bitcom.DecodeMap(proto.Script); m != nil {
 				processMapData(m, bsocial)
 			}
 		case bitcom.BPrefix:
-			if b := bitcom.DecodeBBytes(proto.Script); b != nil {
+			if b := bitcom.DecodeB(proto.Script); b != nil {
 				bsocial.Attachments = append(bsocial.Attachments, *b)
 			}
 		default:

@@ -35,13 +35,16 @@ type B struct {
 	Filename  string    `json:"filename,omitempty"`
 }
 
-// DecodeB decodes the b data from the transaction script
-func DecodeB(scr *script.Script) *B {
-	// Handle nil script
+// DecodeB processes and extracts B protocol data from a transaction script.
+// The function expects the script to contain protocol data in the format:
+// DATA MEDIA_TYPE ENCODING [FILENAME]
+// Where FILENAME is optional. Returns nil if the script is invalid or cannot be parsed.
+func DecodeB(data any) *B {
+	scr := ToScript(data)
 	if scr == nil {
 		return nil
 	}
-	
+
 	pos := &ZERO
 	var op *script.ScriptChunk
 	var err error
@@ -76,14 +79,4 @@ func DecodeB(scr *script.Script) *B {
 	}
 
 	return b
-}
-
-// DecodeBBytes is a helper function that takes a []byte and converts it to script.Script
-// for compatibility with the bsocial package
-func DecodeBBytes(b []byte) *B {
-	if b == nil {
-		return nil
-	}
-	s := script.NewFromBytes(b)
-	return DecodeB(s)
 }

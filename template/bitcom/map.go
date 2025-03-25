@@ -3,7 +3,6 @@ package bitcom
 import (
 	"bytes"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/bsv-blockchain/go-sdk/script"
 )
@@ -28,26 +27,38 @@ type Map struct {
 }
 
 // DecodeMap decodes the map data from the transaction script
-func DecodeMap(scr script.Script) *Map {
-	// Only check empty script, actual nil script would have been caught before this
-	if len(scr) == 0 {
+func DecodeMap(data any) *Map {
+	scr := ToScript(data)
+	if scr == nil || len(*scr) == 0 {
 		return nil
 	}
-	
+
 	pos := &ZERO
 	var op *script.ScriptChunk
 	var err error
 
+	// Read prefix
 	if op, err = scr.ReadOp(pos); err != nil {
 		return nil
 	}
+	if string(op.Data) != MapPrefix {
+		return nil
+	}
 
+	// Read command
+	if op, err = scr.ReadOp(pos); err != nil {
+		return nil
+	}
+	cmd := MapCmd(op.Data)
+
+	// Create map
 	m := &Map{
-		Cmd:  MapCmd(op.Data),
+		Cmd:  cmd,
 		Data: make(map[string]string),
 	}
 
-	if m.Cmd == MapCmdSet {
+	// Handle SET command
+	if cmd == MapCmdSet {
 		for {
 			// Save position to revert if needed
 			keyPos := *pos
@@ -65,22 +76,12 @@ func DecodeMap(scr script.Script) *Map {
 				break
 			}
 
-			if !utf8.Valid([]byte(opKey)) || !utf8.Valid(op.Data) {
-				continue
-			}
+			// Clean up value, replacing invalid UTF-8 sequences with spaces
+			// rather than skipping the entire key-value pair
+			cleanValue := strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
 
-			m.Data[opKey] = strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
+			m.Data[opKey] = cleanValue
 		}
 	}
 	return m
-}
-
-// DecodeMapBytes is a helper function that takes a []byte and converts it to script.Script
-// for compatibility with the bsocial package
-func DecodeMapBytes(b []byte) *Map {
-	if b == nil {
-		return nil
-	}
-	s := script.NewFromBytes(b)
-	return DecodeMap(*s)
 }

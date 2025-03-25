@@ -72,6 +72,7 @@ func TestCreateLike(t *testing.T) {
 	require.NoError(t, err)
 
 	// Parse with bmap
+	// TODO: Use our internal parsers instead of adding the bmap dependency
 	bmapTx, err := bmap.NewFromRawTxString(tx.String())
 	require.NoError(t, err)
 
