@@ -283,12 +283,12 @@ func TestDecodeTransaction(t *testing.T) {
 	require.NotNil(t, bsocial)
 	require.NotNil(t, bsocial.Post)
 
-	// MAke sure the values are what we expect
-	// require.Equal(t, bsocial.Post.Action.Type, TypePostReply)
-	// require.Equal(t, bsocial.Post.Action.App, AppName)
-	// require.Equal(t, bsocial.Post.B.MediaType, bitcom.MediaTypeTextMarkdown)
-	// require.Equal(t, bsocial.Post.B.Encoding, bitcom.EncodingUTF8)
-	// require.Equal(t, bsocial.Post.B.Data, []byte("# Test post for decoding"))
+	// Make sure the values are what we expect
+	require.Equal(t, bsocial.Post.Action.Type, TypePostReply)
+	require.Equal(t, bsocial.Post.Action.App, AppName)
+	require.Equal(t, bsocial.Post.B.MediaType, bitcom.MediaTypeTextMarkdown)
+	require.Equal(t, bsocial.Post.B.Encoding, bitcom.EncodingUTF8)
+	require.Equal(t, bsocial.Post.B.Data, []byte("# Test post for decoding"))
 
 	// Test IsEmpty
 	require.False(t, bsocial.IsEmpty())

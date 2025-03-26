@@ -98,6 +98,30 @@ func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
 			processProtocols(bc, bsocial)
 		}
 	}
+	var trimAttachments bool
+	if bsocial.Post != nil && len(bsocial.Attachments) > 0 {
+
+		bsocial.Post.B = bsocial.Attachments[0]
+		trimAttachments = true
+	}
+
+	if bsocial.Reply != nil && len(bsocial.Attachments) > 0 {
+		bsocial.Reply.B = bsocial.Attachments[0]
+		trimAttachments = true
+	}
+
+	if bsocial.Message != nil && len(bsocial.Attachments) > 0 {
+		bsocial.Message.B = bsocial.Attachments[0]
+		trimAttachments = true
+	}
+
+	if trimAttachments {
+		if len(bsocial.Attachments) > 1 {
+			bsocial.Attachments = bsocial.Attachments[1:]
+		} else {
+			bsocial.Attachments = nil
+		}
+	}
 
 	// If bsocial is empty (no fields set), return nil
 	if bsocial.IsEmpty() {
@@ -145,13 +169,11 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 			if _, exists := m.Data["tx"]; exists {
 				// This is a reply
 				bs.Reply = &Reply{
-					B:      createB(m),
 					Action: createAction(TypePostReply, m),
 				}
 			} else {
 				// This is a regular post
 				bs.Post = &Post{
-					B:      createB(m),
 					Action: createAction(TypePostReply, m),
 				}
 			}
@@ -194,7 +216,6 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 		},
 		TypeMessage: func(m *bitcom.Map, bs *BSocial) {
 			bs.Message = &Message{
-				B:      createB(m),
 				Action: createAction(TypeMessage, m),
 			}
 		},
