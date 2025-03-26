@@ -45,7 +45,7 @@ func DecodeB(data any) *B {
 		return nil
 	}
 
-	pos := &ZERO
+	pos := ZERO
 	var op *script.ScriptChunk
 	var err error
 
@@ -55,25 +55,25 @@ func DecodeB(data any) *B {
 	// Skip prefix as it's already checked
 
 	// Read DATA
-	if op, err = scr.ReadOp(pos); err != nil {
+	if op, err = scr.ReadOp(&pos); err != nil {
 		return nil
 	}
 	b.Data = op.Data
 
 	// Read MEDIA_TYPE
-	if op, err = scr.ReadOp(pos); err != nil {
+	if op, err = scr.ReadOp(&pos); err != nil {
 		return nil
 	}
 	b.MediaType = MediaType(op.Data)
 
 	// Read ENCODING
-	if op, err = scr.ReadOp(pos); err != nil {
+	if op, err = scr.ReadOp(&pos); err != nil {
 		return nil
 	}
 	b.Encoding = Encoding(op.Data)
 
 	// Try to read optional FILENAME
-	if op, err = scr.ReadOp(pos); err == nil {
+	if op, err = scr.ReadOp(&pos); err == nil {
 		// Successfully read filename
 		b.Filename = string(op.Data)
 	}

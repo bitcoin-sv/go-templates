@@ -33,8 +33,7 @@ func TestDecodeMap(t *testing.T) {
 		resetTestState()
 
 		s := &script.Script{}
-		t.Logf("Adding MapPrefix: %s", MapPrefix)
-		_ = s.AppendPushData([]byte(MapPrefix))
+
 		t.Logf("Adding MapCmdSet: %s", MapCmdSet)
 		_ = s.AppendPushData([]byte(MapCmdSet))
 		t.Logf("Adding key 'app'")
@@ -71,8 +70,6 @@ func TestDecodeMap(t *testing.T) {
 		resetTestState()
 
 		s := &script.Script{}
-		t.Logf("Adding MapPrefix: %s", MapPrefix)
-		_ = s.AppendPushData([]byte(MapPrefix))
 		t.Logf("Adding MapCmdSet: %s", MapCmdSet)
 		_ = s.AppendPushData([]byte(MapCmdSet))
 		t.Logf("Adding key 'key1'")
@@ -102,8 +99,6 @@ func TestDecodeMap(t *testing.T) {
 		resetTestState()
 
 		s := &script.Script{}
-		t.Logf("Adding MapPrefix: %s", MapPrefix)
-		_ = s.AppendPushData([]byte(MapPrefix))
 		t.Logf("Adding MapCmdSet: %s", MapCmdSet)
 		_ = s.AppendPushData([]byte(MapCmdSet))
 		t.Logf("Adding key 'key2'")
@@ -141,8 +136,6 @@ func TestDecodeMap_Bytes(t *testing.T) {
 
 	// Create a valid MAP protocol script
 	s := &script.Script{}
-	t.Logf("Adding MapPrefix: %s", MapPrefix)
-	_ = s.AppendPushData([]byte(MapPrefix))
 	t.Logf("Adding MapCmdSet: %s", MapCmdSet)
 	_ = s.AppendPushData([]byte(MapCmdSet))
 	t.Logf("Adding key 'app'")
@@ -186,7 +179,6 @@ func TestDecodeMap_Bytes(t *testing.T) {
 
 	// Try using a different approach to create the script bytes
 	manualScript := &script.Script{}
-	_ = manualScript.AppendPushData([]byte(MapPrefix))
 	_ = manualScript.AppendPushData([]byte(MapCmdSet))
 	_ = manualScript.AppendPushData([]byte("app"))
 	_ = manualScript.AppendPushData([]byte("bsocial"))

@@ -1,6 +1,8 @@
 package bsocial
 
 import (
+	"fmt"
+
 	"github.com/bitcoin-sv/go-templates/template/bitcom"
 	"github.com/bitcoin-sv/go-templates/template/p2pkh"
 	"github.com/bitcoinschema/go-aip"
@@ -112,6 +114,8 @@ func processProtocols(bc *bitcom.Bitcom, bsocial *BSocial) {
 		case bitcom.MapPrefix:
 			if m := bitcom.DecodeMap(proto.Script); m != nil {
 				processMapData(m, bsocial)
+			} else {
+				fmt.Printf("Failed to decode MAP data: %s\n", proto.Script)
 			}
 		case bitcom.BPrefix:
 			if b := bitcom.DecodeB(proto.Script); b != nil {
@@ -215,13 +219,20 @@ func createB(m *bitcom.Map) bitcom.B {
 
 // createAction builds an Action structure from MAP data
 func createAction(actionType BSocialType, m *bitcom.Map) Action {
-	return Action{
-		Type:            actionType,
-		Context:         Context(m.Data["context"]),
-		ContextValue:    m.Data["contextValue"],
-		Subcontext:      Context(m.Data["subcontext"]),
-		SubcontextValue: m.Data["subcontextValue"],
+	action := Action{
+		App:        m.Data["app"],
+		Type:       actionType,
+		Context:    Context(m.Data["context"]),
+		Subcontext: Context(m.Data["subcontext"]),
 	}
+
+	if context, exists := m.Data["context"]; exists {
+		action.ContextValue = m.Data[context]
+	}
+	if subcontext, exists := m.Data["subcontext"]; exists {
+		action.SubcontextValue = m.Data[subcontext]
+	}
+	return action
 }
 
 // CreatePost creates a new post transaction
@@ -239,52 +250,46 @@ func CreatePost(post Post, attachments []bitcom.B, tags []string, identityKey *e
 		_ = s.AppendPushData([]byte(post.B.Filename))
 	}
 
-	tx.AddOutput(&transaction.TransactionOutput{
-		LockingScript: s,
-		Satoshis:      0,
-	})
-
-	// Create MAP protocol output
-	mapScript := &script.Script{}
-	_ = mapScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = mapScript.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = mapScript.AppendPushData([]byte("SET"))
-	_ = mapScript.AppendPushData([]byte("app"))
-	_ = mapScript.AppendPushData([]byte(post.App))
-	_ = mapScript.AppendPushData([]byte("type"))
-	_ = mapScript.AppendPushData([]byte(string(TypePostReply)))
+	// Add MAP protocol
+	_ = s.AppendPushData([]byte("|"))
+	_ = s.AppendPushDataString(bitcom.MapPrefix)
+	_ = s.AppendPushDataString("SET")
+	_ = s.AppendPushDataString("app")
+	_ = s.AppendPushDataString(post.App)
+	_ = s.AppendPushDataString("type")
+	_ = s.AppendPushDataString(string(TypePostReply))
 
 	// Add context if provided
 	if post.Context != "" {
-		_ = mapScript.AppendPushData([]byte(string(post.Context)))
-		_ = mapScript.AppendPushData([]byte(post.ContextValue))
+		_ = s.AppendPushData([]byte(string(post.Context)))
+		_ = s.AppendPushData([]byte(post.ContextValue))
 	}
 
 	// Add subcontext if provided
 	if post.Subcontext != "" {
-		_ = mapScript.AppendPushData([]byte(string(post.Subcontext)))
-		_ = mapScript.AppendPushData([]byte(post.SubcontextValue))
+		_ = s.AppendPushData([]byte(string(post.Subcontext)))
+		_ = s.AppendPushData([]byte(post.SubcontextValue))
 	}
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = mapScript.AppendPushData([]byte("|"))
-		_ = mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = s.AppendPushData([]byte("|"))
 
 		// make a string from the mapScript
-		data := mapScript.String()
+		data := s.String()
+		_ = s.AppendPushDataString(bitcom.AIPPrefix)
+		_ = s.AppendPushDataString("BITCOIN_ECDSA")
 		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = mapScript.AppendPushData([]byte(sig.Signature))
+		_ = s.AppendPushDataString(sig.Signature)
 		// pubKey := identityKey.PubKey()
 		// mapScript.AppendPushData(pubKey.Compressed())
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
-		LockingScript: mapScript,
+		LockingScript: s,
 		Satoshis:      0,
 	})
 
@@ -292,16 +297,13 @@ func CreatePost(post Post, attachments []bitcom.B, tags []string, identityKey *e
 	if len(tags) > 0 {
 		tagsScript := &script.Script{}
 		_ = tagsScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-		_ = tagsScript.AppendPushData([]byte(bitcom.MapPrefix))
-		_ = tagsScript.AppendPushData([]byte("SET"))
-		_ = tagsScript.AppendPushData([]byte("app"))
-		_ = tagsScript.AppendPushData([]byte(AppName))
-		_ = tagsScript.AppendPushData([]byte("type"))
-		_ = tagsScript.AppendPushData([]byte(string(TypePostReply)))
-		_ = tagsScript.AppendPushData([]byte("tags"))
+		_ = tagsScript.AppendPushDataString(bitcom.MapPrefix)
+		_ = tagsScript.AppendPushDataString("ADD")
+		_ = tagsScript.AppendPushDataString("tags")
 		for _, tag := range tags {
-			_ = tagsScript.AppendPushData([]byte(tag))
+			_ = tagsScript.AppendPushDataString(tag)
 		}
+
 		tx.AddOutput(&transaction.TransactionOutput{
 			LockingScript: tagsScript,
 			Satoshis:      0,

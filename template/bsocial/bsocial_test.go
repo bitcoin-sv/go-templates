@@ -272,40 +272,23 @@ func TestDecodeTransaction(t *testing.T) {
 		},
 	}
 
-	// Create a post transaction
-	tx, err := CreatePost(post, nil, []string{"test"}, nil)
+	// Create a post transaction◊
+	tx, err := CreatePost(post, nil, []string{"tag1", "tag2"}, nil)
 	require.NoError(t, err)
 
 	// Log transaction for diagnostic purposes
 	t.Logf("Transaction created: %s", tx.String())
 
-	// Parse with bmap to verify content
-	bmapTx, err := bmap.NewFromRawTxString(tx.String())
-	require.NoError(t, err)
-	t.Logf("MAP Entries from bmap: %+v", bmapTx.MAP)
-	t.Logf("B Entries from bmap: %+v", bmapTx.B)
+	bsocial := DecodeTransaction(tx)
+	require.NotNil(t, bsocial)
+	require.NotNil(t, bsocial.Post)
 
-	// Since there's an issue with DecodeTransaction, we test IsEmpty function with a manual BSocial object
-	bsocial := &BSocial{
-		Post: &Post{
-			Action: Action{
-				Type: TypePostReply,
-				App:  AppName,
-			},
-			B: bitcom.B{
-				MediaType: bitcom.MediaTypeTextMarkdown,
-				Encoding:  bitcom.EncodingUTF8,
-				Data:      []byte("# Test post for decoding"),
-			},
-		},
-		Attachments: []bitcom.B{
-			{
-				MediaType: bitcom.MediaTypeTextMarkdown,
-				Encoding:  bitcom.EncodingUTF8,
-				Data:      []byte("# Test post for decoding"),
-			},
-		},
-	}
+	// MAke sure the values are what we expect
+	// require.Equal(t, bsocial.Post.Action.Type, TypePostReply)
+	// require.Equal(t, bsocial.Post.Action.App, AppName)
+	// require.Equal(t, bsocial.Post.B.MediaType, bitcom.MediaTypeTextMarkdown)
+	// require.Equal(t, bsocial.Post.B.Encoding, bitcom.EncodingUTF8)
+	// require.Equal(t, bsocial.Post.B.Data, []byte("# Test post for decoding"))
 
 	// Test IsEmpty
 	require.False(t, bsocial.IsEmpty())

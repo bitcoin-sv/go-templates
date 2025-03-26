@@ -122,6 +122,23 @@ func TestFindReturn(t *testing.T) {
 	var nilScript *script.Script
 	result := findReturn(nilScript, 0)
 	require.Equal(t, -1, result, "Expected -1 for nil script in findReturn")
+
+	// Test for OP_RETURN with and without prefix
+	s := &script.Script{}
+	_ = s.AppendOpcodes(script.OpRETURN)
+	_ = s.AppendPushData([]byte("test data"))
+
+	result = findReturn(s, 0)
+	require.Equal(t, 0, result, "Expected 0 for OP_RETURN without prefix in findReturn")
+
+	// Test for OP_RETURN without prefix
+	s2 := &script.Script{}
+	_ = s2.AppendOpcodes(script.OpFALSE)
+	_ = s2.AppendOpcodes(script.OpRETURN)
+	_ = s2.AppendPushData([]byte("test data2"))
+
+	result = findReturn(s2, 0)
+	require.Equal(t, 1, result, "Expected 1 for OP_RETURN with prefix in findReturn")
 }
 
 // TestFindPipe verifies that the findPipe function correctly identifies
@@ -203,11 +220,11 @@ func TestDecode_WithMultipleProtocols(t *testing.T) {
 	require.NotNil(t, result, "Decode should return non-nil result for valid script")
 
 	// Verify the protocol decoding
-	require.Len(t, result.Protocols, 1, "Current decoder returns 1 protocol for this input")
+	require.Len(t, result.Protocols, 2, "Current decoder returns 2 protocols for this output")
 
 	// Verify the protocol content
-	require.True(t, strings.HasPrefix(result.Protocols[0].Protocol, "P"),
-		"Protocol value should start with 'P' (from MAP prefix)")
+	require.True(t, strings.HasPrefix(result.Protocols[0].Protocol, "1P"),
+		"Protocol value should start with '1P' (from MAP prefix)")
 }
 
 // TestDecode_WithNoPipe verifies the decoding of scripts

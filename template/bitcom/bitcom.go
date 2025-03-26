@@ -26,8 +26,12 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 	if pos == -1 {
 		return
 	}
+	var prefix []byte
+	if pos > 0 {
+		prefix = (*scr)[:pos-1]
+	}
 	bitcom = &Bitcom{
-		ScriptPrefix: (*scr)[:pos-1],
+		ScriptPrefix: prefix,
 	}
 	pos++
 
@@ -41,13 +45,12 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 		} else {
 			p.Protocol = string(op.Data)
 		}
+		bitcom.Protocols = append(bitcom.Protocols, p)
 		if pipePos == -1 {
 			p.Script = (*scr)[pos:]
-			bitcom.Protocols = append(bitcom.Protocols, p)
 			return bitcom
 		}
-		p.Script = (*scr)[pos:]
-		bitcom.Protocols = append(bitcom.Protocols, p)
+		p.Script = (*scr)[pos:pipePos]
 		pos = pipePos + 2
 	}
 }
@@ -67,32 +70,33 @@ func (b *Bitcom) Lock() *script.Script {
 	return s
 }
 
-func findReturn(scr *script.Script, pos int) int {
-	// Handle nil script
-	if scr == nil {
-		return -1
-	}
-
-	for i := pos; i < len(*scr); i++ {
-		if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpRETURN {
-			return i
+func findReturn(scr *script.Script, from int) (pos int) {
+	pos = -1
+	if scr != nil {
+		i := from
+		for i < len(*scr) {
+			startPos := i
+			if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpRETURN {
+				return startPos
+			}
 		}
 	}
-	return -1
+	return
 }
 
-func findPipe(scr *script.Script, pos int) int {
-	// Handle nil script
-	if scr == nil {
-		return -1
-	}
+func findPipe(scr *script.Script, from int) (pos int) {
+	pos = -1
+	if scr != nil {
+		i := from
+		for i < len(*scr) {
+			startPos := i
+			if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpDATA1 && op.Data[0] == '|' {
 
-	for i := pos; i < len(*scr); i++ {
-		if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpDATA1 && op.Data[0] == '|' {
-			return i
+				return startPos
+			}
 		}
 	}
-	return -1
+	return
 }
 
 // ToScript converts a []byte to a script.Script or returns a script directly

@@ -33,20 +33,17 @@ func DecodeMap(data any) *Map {
 		return nil
 	}
 
-	pos := &ZERO
+	pos := ZERO
 	var op *script.ScriptChunk
 	var err error
 
-	// Read prefix
-	if op, err = scr.ReadOp(pos); err != nil {
-		return nil
-	}
-	if string(op.Data) != MapPrefix {
+	// If length is < minimum, return nil
+	if len(*scr) < 6 {
 		return nil
 	}
 
 	// Read command
-	if op, err = scr.ReadOp(pos); err != nil {
+	if op, err = scr.ReadOp(&pos); err != nil {
 		return nil
 	}
 	cmd := MapCmd(op.Data)
@@ -61,18 +58,18 @@ func DecodeMap(data any) *Map {
 	if cmd == MapCmdSet {
 		for {
 			// Save position to revert if needed
-			keyPos := *pos
+			keyPos := pos
 
 			// Try to read key
-			if op, err = scr.ReadOp(pos); err != nil {
+			if op, err = scr.ReadOp(&pos); err != nil {
 				break
 			}
 			opKey := strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
 
 			// Try to read value
-			if op, err = scr.ReadOp(pos); err != nil {
+			if op, err = scr.ReadOp(&pos); err != nil {
 				// Couldn't read value, revert to position before key and break
-				*pos = keyPos
+				pos = keyPos
 				break
 			}
 
@@ -83,5 +80,6 @@ func DecodeMap(data any) *Map {
 			m.Data[opKey] = cleanValue
 		}
 	}
+
 	return m
 }
