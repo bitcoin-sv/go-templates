@@ -65,9 +65,9 @@ func TestDecodeAIP(t *testing.T) {
 						Protocol: AIPPrefix,
 						Script: func() []byte {
 							s := &script.Script{}
-							s.AppendPushData([]byte("BITCOIN_ECDSA"))
-							s.AppendPushData([]byte("1address1234567890"))
-							s.AppendPushData([]byte("signature1234567890"))
+							_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+							_ = s.AppendPushData([]byte("1address1234567890"))
+							_ = s.AppendPushData([]byte("signature1234567890"))
 							return *s
 						}(),
 						Pos: 0,
@@ -90,12 +90,12 @@ func TestDecodeAIP(t *testing.T) {
 						Protocol: AIPPrefix,
 						Script: func() []byte {
 							s := &script.Script{}
-							s.AppendPushData([]byte("BITCOIN_ECDSA"))
-							s.AppendPushData([]byte("1address1234567890"))
-							s.AppendPushData([]byte("signature1234567890"))
-							s.AppendPushData([]byte("1"))
-							s.AppendPushData([]byte("2"))
-							s.AppendPushData([]byte("3"))
+							_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+							_ = s.AppendPushData([]byte("1address1234567890"))
+							_ = s.AppendPushData([]byte("signature1234567890"))
+							_ = s.AppendPushData([]byte("1"))
+							_ = s.AppendPushData([]byte("2"))
+							_ = s.AppendPushData([]byte("3"))
 							return *s
 						}(),
 						Pos: 0,
@@ -119,9 +119,9 @@ func TestDecodeAIP(t *testing.T) {
 						Protocol: AIPPrefix,
 						Script: func() []byte {
 							s := &script.Script{}
-							s.AppendPushData([]byte("BITCOIN_ECDSA"))
-							s.AppendPushData([]byte("1address1234567890"))
-							s.AppendPushData([]byte("signature1234567890"))
+							_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+							_ = s.AppendPushData([]byte("1address1234567890"))
+							_ = s.AppendPushData([]byte("signature1234567890"))
 							return *s
 						}(),
 						Pos: 0,
@@ -144,7 +144,7 @@ func TestDecodeAIP(t *testing.T) {
 						Protocol: AIPPrefix,
 						Script: func() []byte {
 							s := &script.Script{}
-							s.AppendPushData([]byte("BITCOIN_ECDSA"))
+							_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
 							// Missing address and signature
 							return *s
 						}(),
@@ -162,10 +162,10 @@ func TestDecodeAIP(t *testing.T) {
 						Protocol: AIPPrefix,
 						Script: func() []byte {
 							s := &script.Script{}
-							s.AppendPushData([]byte("BITCOIN_ECDSA"))
-							s.AppendPushData([]byte("1address1234567890"))
-							s.AppendPushData([]byte("signature1234567890"))
-							s.AppendPushData([]byte("not-a-number"))
+							_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+							_ = s.AppendPushData([]byte("1address1234567890"))
+							_ = s.AppendPushData([]byte("signature1234567890"))
+							_ = s.AppendPushData([]byte("not-a-number"))
 							return *s
 						}(),
 						Pos: 0,

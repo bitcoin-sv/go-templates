@@ -64,7 +64,7 @@ func DecodeMap(data any) *Map {
 			if op, err = scr.ReadOp(&pos); err != nil {
 				break
 			}
-			opKey := strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
+			opKey := strings.ReplaceAll(string(bytes.ReplaceAll(op.Data, []byte{0}, []byte{' '})), "\\u0000", " ")
 
 			// Try to read value
 			if op, err = scr.ReadOp(&pos); err != nil {
@@ -75,7 +75,7 @@ func DecodeMap(data any) *Map {
 
 			// Clean up value, replacing invalid UTF-8 sequences with spaces
 			// rather than skipping the entire key-value pair
-			cleanValue := strings.Replace(string(bytes.Replace(op.Data, []byte{0}, []byte{' '}, -1)), "\\u0000", " ", -1)
+			cleanValue := strings.ReplaceAll(string(bytes.ReplaceAll(op.Data, []byte{0}, []byte{' '})), "\\u0000", " ")
 
 			m.Data[opKey] = cleanValue
 		}

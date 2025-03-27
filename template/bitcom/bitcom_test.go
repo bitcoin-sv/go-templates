@@ -61,10 +61,10 @@ func TestLock(t *testing.T) {
 			},
 			expected: func() []byte {
 				s := &script.Script{}
-				s.AppendOpcodes(script.OpFALSE)
-				s.AppendOpcodes(script.OpRETURN)
-				s.AppendPushData([]byte(MapPrefix))
-				s.AppendPushData([]byte("test data"))
+				_ = s.AppendOpcodes(script.OpFALSE)
+				_ = s.AppendOpcodes(script.OpRETURN)
+				_ = s.AppendPushData([]byte(MapPrefix))
+				_ = s.AppendPushData([]byte("test data"))
 				return *s
 			}(),
 		},
@@ -85,13 +85,13 @@ func TestLock(t *testing.T) {
 			},
 			expected: func() []byte {
 				s := &script.Script{}
-				s.AppendOpcodes(script.OpFALSE)
-				s.AppendOpcodes(script.OpRETURN)
-				s.AppendPushData([]byte(MapPrefix))
-				s.AppendPushData([]byte("map data"))
-				s.AppendPushData([]byte("|"))
-				s.AppendPushData([]byte(BPrefix))
-				s.AppendPushData([]byte("b data"))
+				_ = s.AppendOpcodes(script.OpFALSE)
+				_ = s.AppendOpcodes(script.OpRETURN)
+				_ = s.AppendPushData([]byte(MapPrefix))
+				_ = s.AppendPushData([]byte("map data"))
+				_ = s.AppendPushData([]byte("|"))
+				_ = s.AppendPushData([]byte(BPrefix))
+				_ = s.AppendPushData([]byte("b data"))
 				return *s
 			}(),
 		},
