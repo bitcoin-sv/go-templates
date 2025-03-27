@@ -229,15 +229,6 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 	}
 }
 
-// createB creates a B protocol structure from MAP data
-func createB(m *bitcom.Map) bitcom.B {
-	return bitcom.B{
-		MediaType: bitcom.MediaType(m.Data["mediaType"]),
-		Encoding:  bitcom.Encoding(m.Data["encoding"]),
-		Data:      []byte(m.Data["content"]),
-	}
-}
-
 // createAction builds an Action structure from MAP data
 func createAction(actionType BSocialType, m *bitcom.Map) Action {
 	action := Action{
@@ -263,16 +254,16 @@ func CreatePost(post Post, attachments []bitcom.B, tags []string, identityKey *e
 	// Create B protocol output first
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.BPrefix))
+	_ = s.AppendPushDataString(bitcom.BPrefix)
 	_ = s.AppendPushData(post.B.Data)
-	_ = s.AppendPushData([]byte(string(post.B.MediaType)))
-	_ = s.AppendPushData([]byte(string(post.B.Encoding)))
+	_ = s.AppendPushDataString(string(post.B.MediaType))
+	_ = s.AppendPushDataString(string(post.B.Encoding))
 	if post.B.Filename != "" {
-		_ = s.AppendPushData([]byte(post.B.Filename))
+		_ = s.AppendPushDataString(post.B.Filename)
 	}
 
 	// Add MAP protocol
-	_ = s.AppendPushData([]byte("|"))
+	_ = s.AppendPushDataString("|")
 	_ = s.AppendPushDataString(bitcom.MapPrefix)
 	_ = s.AppendPushDataString("SET")
 	_ = s.AppendPushDataString("app")
@@ -282,19 +273,19 @@ func CreatePost(post Post, attachments []bitcom.B, tags []string, identityKey *e
 
 	// Add context if provided
 	if post.Context != "" {
-		_ = s.AppendPushData([]byte(string(post.Context)))
-		_ = s.AppendPushData([]byte(post.ContextValue))
+		_ = s.AppendPushDataString(string(post.Context))
+		_ = s.AppendPushDataString(post.ContextValue)
 	}
 
 	// Add subcontext if provided
 	if post.Subcontext != "" {
-		_ = s.AppendPushData([]byte(string(post.Subcontext)))
-		_ = s.AppendPushData([]byte(post.SubcontextValue))
+		_ = s.AppendPushDataString(string(post.Subcontext))
+		_ = s.AppendPushDataString(post.SubcontextValue)
 	}
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = s.AppendPushData([]byte("|"))
+		_ = s.AppendPushDataString("|")
 
 		// make a string from the mapScript
 		data := s.String()
@@ -341,12 +332,12 @@ func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, chang
 	// Create B protocol output first
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.BPrefix))
+	_ = s.AppendPushDataString(bitcom.BPrefix)
 	_ = s.AppendPushData(reply.B.Data)
-	_ = s.AppendPushData([]byte(string(reply.B.MediaType)))
-	_ = s.AppendPushData([]byte(string(reply.B.Encoding)))
+	_ = s.AppendPushDataString(string(reply.B.MediaType))
+	_ = s.AppendPushDataString(string(reply.B.Encoding))
 	if reply.B.Filename != "" {
-		_ = s.AppendPushData([]byte(reply.B.Filename))
+		_ = s.AppendPushDataString(reply.B.Filename)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -355,36 +346,36 @@ func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, chang
 	})
 
 	// Create MAP protocol output
-	mapScript := &script.Script{}
-	_ = mapScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = mapScript.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = mapScript.AppendPushData([]byte("SET"))
-	_ = mapScript.AppendPushData([]byte("app"))
-	_ = mapScript.AppendPushData([]byte(AppName))
-	_ = mapScript.AppendPushData([]byte("type"))
-	_ = mapScript.AppendPushData([]byte(string(TypePostReply)))
-	_ = mapScript.AppendPushData([]byte("context"))
-	_ = mapScript.AppendPushData([]byte("tx"))
-	_ = mapScript.AppendPushData([]byte("tx"))
-	_ = mapScript.AppendPushData([]byte(replyTxID))
+
+	_ = s.AppendPushDataString("|")
+	_ = s.AppendPushDataString(bitcom.MapPrefix)
+	_ = s.AppendPushDataString("SET")
+	_ = s.AppendPushDataString("app")
+	_ = s.AppendPushDataString(AppName)
+	_ = s.AppendPushDataString("type")
+	_ = s.AppendPushDataString(string(TypePostReply))
+	_ = s.AppendPushDataString("context")
+	_ = s.AppendPushDataString("tx")
+	_ = s.AppendPushDataString("tx")
+	_ = s.AppendPushDataString(replyTxID)
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = mapScript.AppendPushData([]byte("|"))
-		_ = mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = s.AppendPushDataString("|")
+		_ = s.AppendPushDataString(bitcom.AIPPrefix)
+		_ = s.AppendPushDataString("BITCOIN_ECDSA")
 
 		// make a string from the mapScript
-		data := mapScript.String()
+		data := s.String()
 		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = mapScript.AppendPushData([]byte(sig.Signature))
+		_ = s.AppendPushDataString(sig.Signature)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
-		LockingScript: mapScript,
+		LockingScript: s,
 		Satoshis:      0,
 	})
 
@@ -408,22 +399,22 @@ func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *scrip
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = s.AppendPushData([]byte("SET"))
-	_ = s.AppendPushData([]byte("app"))
-	_ = s.AppendPushData([]byte(AppName))
-	_ = s.AppendPushData([]byte("type"))
-	_ = s.AppendPushData([]byte(string(TypeLike)))
-	_ = s.AppendPushData([]byte("context"))
-	_ = s.AppendPushData([]byte(string(ContextTx)))
-	_ = s.AppendPushData([]byte(string(ContextTx)))
-	_ = s.AppendPushData([]byte(likeTxID))
+	_ = s.AppendPushDataString(bitcom.MapPrefix)
+	_ = s.AppendPushDataString("SET")
+	_ = s.AppendPushDataString("app")
+	_ = s.AppendPushDataString(AppName)
+	_ = s.AppendPushDataString("type")
+	_ = s.AppendPushDataString(string(TypeLike))
+	_ = s.AppendPushDataString("context")
+	_ = s.AppendPushDataString(string(ContextTx))
+	_ = s.AppendPushDataString(string(ContextTx))
+	_ = s.AppendPushDataString(likeTxID)
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = s.AppendPushData([]byte("|"))
-		_ = s.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = s.AppendPushDataString("|")
+		_ = s.AppendPushDataString(bitcom.AIPPrefix)
+		_ = s.AppendPushDataString("BITCOIN_ECDSA")
 
 		// make a string from the script
 		data := s.String()
@@ -431,7 +422,7 @@ func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *scrip
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushData([]byte(sig.Signature))
+		_ = s.AppendPushDataString(sig.Signature)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -459,22 +450,22 @@ func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *s
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = s.AppendPushData([]byte("SET"))
-	_ = s.AppendPushData([]byte("app"))
-	_ = s.AppendPushData([]byte(AppName))
-	_ = s.AppendPushData([]byte("type"))
-	_ = s.AppendPushData([]byte(string(TypeUnlike)))
-	_ = s.AppendPushData([]byte("context"))
-	_ = s.AppendPushData([]byte(string(ContextTx)))
-	_ = s.AppendPushData([]byte(string(ContextTx)))
-	_ = s.AppendPushData([]byte(unlikeTxID))
+	_ = s.AppendPushDataString(bitcom.MapPrefix)
+	_ = s.AppendPushDataString("SET")
+	_ = s.AppendPushDataString("app")
+	_ = s.AppendPushDataString(AppName)
+	_ = s.AppendPushDataString("type")
+	_ = s.AppendPushDataString(string(TypeUnlike))
+	_ = s.AppendPushDataString("context")
+	_ = s.AppendPushDataString(string(ContextTx))
+	_ = s.AppendPushDataString(string(ContextTx))
+	_ = s.AppendPushDataString(unlikeTxID)
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = s.AppendPushData([]byte("|"))
-		_ = s.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = s.AppendPushDataString("|")
+		_ = s.AppendPushDataString(bitcom.AIPPrefix)
+		_ = s.AppendPushDataString("BITCOIN_ECDSA")
 
 		// make a string from the script
 		data := s.String()
@@ -482,7 +473,7 @@ func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *s
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushData([]byte(sig.Signature))
+		_ = s.AppendPushDataString(sig.Signature)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -510,22 +501,22 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = s.AppendPushData([]byte("SET"))
-	_ = s.AppendPushData([]byte("app"))
-	_ = s.AppendPushData([]byte(AppName))
-	_ = s.AppendPushData([]byte("type"))
-	_ = s.AppendPushData([]byte(string(TypeFollow)))
-	_ = s.AppendPushData([]byte("context"))
-	_ = s.AppendPushData([]byte(string(ContextBapID)))
-	_ = s.AppendPushData([]byte(string(ContextBapID)))
-	_ = s.AppendPushData([]byte(followBapID))
+	_ = s.AppendPushDataString(bitcom.MapPrefix)
+	_ = s.AppendPushDataString("SET")
+	_ = s.AppendPushDataString("app")
+	_ = s.AppendPushDataString(AppName)
+	_ = s.AppendPushDataString("type")
+	_ = s.AppendPushDataString(string(TypeFollow))
+	_ = s.AppendPushDataString("context")
+	_ = s.AppendPushDataString(string(ContextBapID))
+	_ = s.AppendPushDataString(string(ContextBapID))
+	_ = s.AppendPushDataString(followBapID)
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = s.AppendPushData([]byte("|"))
-		_ = s.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = s.AppendPushDataString("|")
+		_ = s.AppendPushDataString(bitcom.AIPPrefix)
+		_ = s.AppendPushDataString("BITCOIN_ECDSA")
 
 		// make a string from the script
 		data := s.String()
@@ -533,7 +524,7 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushData([]byte(sig.Signature))
+		_ = s.AppendPushDataString(sig.Signature)
 	}
 
 	// Add action output
@@ -562,22 +553,22 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 	tx := transaction.NewTransaction()
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = s.AppendPushData([]byte("SET"))
-	_ = s.AppendPushData([]byte("app"))
-	_ = s.AppendPushData([]byte(AppName))
-	_ = s.AppendPushData([]byte("type"))
-	_ = s.AppendPushData([]byte(string(TypeUnfollow)))
-	_ = s.AppendPushData([]byte("context"))
-	_ = s.AppendPushData([]byte(string(ContextBapID)))
-	_ = s.AppendPushData([]byte(string(ContextBapID)))
-	_ = s.AppendPushData([]byte(unfollowBapID))
+	_ = s.AppendPushDataString(bitcom.MapPrefix)
+	_ = s.AppendPushDataString("SET")
+	_ = s.AppendPushDataString("app")
+	_ = s.AppendPushDataString(AppName)
+	_ = s.AppendPushDataString("type")
+	_ = s.AppendPushDataString(string(TypeUnfollow))
+	_ = s.AppendPushDataString("context")
+	_ = s.AppendPushDataString(string(ContextBapID))
+	_ = s.AppendPushDataString(string(ContextBapID))
+	_ = s.AppendPushDataString(unfollowBapID)
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = s.AppendPushData([]byte("|"))
-		_ = s.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = s.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = s.AppendPushDataString("|")
+		_ = s.AppendPushDataString(bitcom.AIPPrefix)
+		_ = s.AppendPushDataString("BITCOIN_ECDSA")
 
 		// make a string from the script
 		data := s.String()
@@ -585,7 +576,7 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushData([]byte(sig.Signature))
+		_ = s.AppendPushDataString(sig.Signature)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -615,12 +606,12 @@ func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *sc
 	// Create B protocol output first
 	s := &script.Script{}
 	_ = s.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = s.AppendPushData([]byte(bitcom.BPrefix))
+	_ = s.AppendPushDataString(bitcom.BPrefix)
 	_ = s.AppendPushData(message.B.Data)
-	_ = s.AppendPushData([]byte(string(message.B.MediaType)))
-	_ = s.AppendPushData([]byte(string(message.B.Encoding)))
+	_ = s.AppendPushDataString(string(message.B.MediaType))
+	_ = s.AppendPushDataString(string(message.B.Encoding))
 	if message.B.Filename != "" {
-		_ = s.AppendPushData([]byte(message.B.Filename))
+		_ = s.AppendPushDataString(message.B.Filename)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -631,26 +622,26 @@ func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *sc
 	// Create MAP protocol output
 	mapScript := &script.Script{}
 	_ = mapScript.AppendOpcodes(script.OpFALSE, script.OpRETURN)
-	_ = mapScript.AppendPushData([]byte(bitcom.MapPrefix))
-	_ = mapScript.AppendPushData([]byte("SET"))
-	_ = mapScript.AppendPushData([]byte("app"))
-	_ = mapScript.AppendPushData([]byte(AppName))
-	_ = mapScript.AppendPushData([]byte("type"))
-	_ = mapScript.AppendPushData([]byte(string(TypeMessage)))
+	_ = mapScript.AppendPushDataString(bitcom.MapPrefix)
+	_ = mapScript.AppendPushDataString("SET")
+	_ = mapScript.AppendPushDataString("app")
+	_ = mapScript.AppendPushDataString(AppName)
+	_ = mapScript.AppendPushDataString("type")
+	_ = mapScript.AppendPushDataString(string(TypeMessage))
 
 	// Add context if provided
 	if message.Context != "" {
-		_ = mapScript.AppendPushData([]byte("context"))
-		_ = mapScript.AppendPushData([]byte(string(message.Context)))
-		_ = mapScript.AppendPushData([]byte(string(message.Context)))
-		_ = mapScript.AppendPushData([]byte(message.ContextValue))
+		_ = mapScript.AppendPushDataString("context")
+		_ = mapScript.AppendPushDataString(string(message.Context))
+		_ = mapScript.AppendPushDataString(string(message.Context))
+		_ = mapScript.AppendPushDataString(message.ContextValue)
 	}
 
 	// Add AIP signature
 	if identityKey != nil {
-		_ = mapScript.AppendPushData([]byte("|"))
-		_ = mapScript.AppendPushData([]byte(bitcom.AIPPrefix))
-		_ = mapScript.AppendPushData([]byte("BITCOIN_ECDSA"))
+		_ = mapScript.AppendPushDataString("|")
+		_ = mapScript.AppendPushDataString(bitcom.AIPPrefix)
+		_ = mapScript.AppendPushDataString("BITCOIN_ECDSA")
 
 		// make a string from the mapScript
 		data := mapScript.String()
@@ -658,7 +649,7 @@ func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *sc
 		if err != nil {
 			return nil, err
 		}
-		_ = mapScript.AppendPushData([]byte(sig.Signature))
+		_ = mapScript.AppendPushDataString(sig.Signature)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
