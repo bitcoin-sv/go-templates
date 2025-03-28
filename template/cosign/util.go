@@ -11,7 +11,7 @@ type Cosign struct {
 	Cosigner string `json:"cosigner"`
 }
 
-func ParseScript(s *script.Script) *Cosign {
+func Decode(s *script.Script) *Cosign {
 	chunks, _ := s.Chunks()
 	for i := range len(chunks) - 6 {
 		if chunks[0+i].Op == script.OpDUP &&

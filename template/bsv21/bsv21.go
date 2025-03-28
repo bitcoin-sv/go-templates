@@ -25,6 +25,7 @@ type Bsv21 struct {
 	Decimals uint8   `json:"dec"`
 	Icon     *string `json:"icon,omitempty"`
 	Amt      uint64  `json:"amt"`
+	Insc     *inscription.Inscription
 }
 
 func Decode(scr *script.Script) *Bsv21 {
@@ -36,10 +37,12 @@ func Decode(scr *script.Script) *Bsv21 {
 		return nil
 	} else if err := json.Unmarshal(insc.File.Content, &data); err != nil {
 		return nil
-	} else if p, ok := data["p"]; !ok || p != "bsv21" {
+	} else if p, ok := data["p"]; !ok || p != "bsv-20" {
 		return nil
 	} else {
-		bsv21 := &Bsv21{}
+		bsv21 := &Bsv21{
+			Insc: insc,
+		}
 		if op, ok := data["op"]; ok {
 			bsv21.Op = strings.ToLower(op)
 		} else {

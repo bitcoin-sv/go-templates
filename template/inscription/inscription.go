@@ -29,7 +29,7 @@ func Decode(scr *script.Script) *Inscription {
 		startI := pos
 		if op, err := scr.ReadOp(&pos); err != nil {
 			break
-		} else if pos > 2 && op.Op == script.OpDATA3 && bytes.Equal(op.Data, []byte("ord")) && (*scr)[startI-2] == 0 && (*scr)[startI-1] == script.OpIF {
+		} else if pos >= 2 && op.Op == script.OpDATA3 && bytes.Equal(op.Data, []byte("ord")) && (*scr)[startI-2] == 0 && (*scr)[startI-1] == script.OpIF {
 			insc := &Inscription{
 				ScriptPrefix: (*scr)[:startI-2],
 			}
@@ -75,7 +75,7 @@ func Decode(scr *script.Script) *Inscription {
 
 			}
 			op, err := scr.ReadOp(&pos)
-			if err != nil || op.Op != script.OpENDIF {
+			if err != nil || op.Op == script.OpENDIF {
 				insc.ScriptSuffix = (*scr)[pos:]
 				return insc
 			}
