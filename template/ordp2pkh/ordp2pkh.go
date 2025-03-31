@@ -21,34 +21,39 @@ type OrdP2PKH struct {
 
 // Decode attempts to extract both an Inscription and a P2PKH address from a script.
 // Returns nil if either component is not found in the script.
-
 func Decode(scr *script.Script) *OrdP2PKH {
-
 	// Try to decode the inscription first
 	inscription := inscription.Decode(scr)
 	if inscription == nil {
 		return nil
 	}
 
+	// Check prefix first
 	prefix := script.NewFromBytes(inscription.ScriptPrefix)
+	if prefix != nil {
+		address := p2pkh.Decode(prefix, true)
+		if address != nil {
+			return &OrdP2PKH{
+				Inscription: inscription,
+				Address:     address,
+			}
+		}
+	}
+
+	// Only check suffix if address wasn't found in the prefix
 	suffix := script.NewFromBytes(inscription.ScriptSuffix)
-	if prefix == nil && suffix == nil {
-		return nil
-	}
-	// Look for P2PKH pattern in the beginning of the script
-	address := p2pkh.Decode(prefix, true)
-	if address == nil {
-		address = p2pkh.Decode(suffix, true)
-	}
-
-	if address == nil {
-		return nil
+	if suffix != nil {
+		address := p2pkh.Decode(suffix, true)
+		if address != nil {
+			return &OrdP2PKH{
+				Inscription: inscription,
+				Address:     address,
+			}
+		}
 	}
 
-	return &OrdP2PKH{
-		Inscription: inscription,
-		Address:     address,
-	}
+	// No valid address found
+	return nil
 }
 
 // Lock creates a combined script that includes an inscription followed by a P2PKH locking script.
