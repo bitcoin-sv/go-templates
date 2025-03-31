@@ -84,7 +84,7 @@ func Decode(scr *script.Script) *Inscription {
 	return nil
 }
 
-func (i *Inscription) Lock() *script.Script {
+func (i *Inscription) Lock() (*script.Script, error) {
 	s := script.NewFromBytes(i.ScriptPrefix)
 	_ = s.AppendOpcodes(script.Op0, script.OpIF)
 	_ = s.AppendPushData([]byte("ord"))
@@ -103,5 +103,5 @@ func (i *Inscription) Lock() *script.Script {
 	_ = s.AppendOpcodes(script.Op0)
 	_ = s.AppendPushData(i.File.Content)
 	_ = s.AppendOpcodes(script.OpENDIF)
-	return script.NewFromBytes(append(*s, i.ScriptSuffix...))
+	return script.NewFromBytes(append(*s, i.ScriptSuffix...)), nil
 }

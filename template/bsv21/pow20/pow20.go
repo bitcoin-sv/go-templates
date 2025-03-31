@@ -3,12 +3,12 @@ package pow20
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/script/interpreter"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
@@ -33,59 +33,68 @@ type Pow20Unlocker struct {
 	Recipient *script.Address `json:"recipient"`
 }
 
-func (p *Pow20) FromScript(s *script.Script, txid string, vout uint32) (*Pow20, error) {
+func Decode(s *script.Script) *Pow20 {
 	prefix := bytes.Index(*s, *pow20Prefix)
 	if prefix == -1 {
-		return nil, errors.New("invalid script")
+		return nil
 	}
 	suffix := bytes.Index(*s, *pow20Suffix)
 	if suffix == -1 {
-		return nil, errors.New("invalid script")
+		return nil
 	}
 	pos := prefix + len(*pow20Prefix)
 	var err error
 	var op *script.ScriptChunk
 
+	p := &Pow20{}
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
 	}
 	p.Symbol = string(op.Data)
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
 	}
-	p.Max = bytesToUint64(op.Data)
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
+	} else if number, err := interpreter.MakeScriptNumber(op.Data, len(op.Data), true, true); err != nil {
+		return nil
+	} else {
+		p.Max = number.Val.Uint64()
 	}
-	if op.Op >= script.Op1 && op.Op <= script.Op16 {
+	if op, err = s.ReadOp(&pos); err != nil {
+		return nil
+	} else if op.Op >= script.Op1 && op.Op <= script.Op16 {
 		p.Dec = op.Op - 0x50
 	} else if len(op.Data) == 1 {
 		p.Dec = op.Data[0]
 	}
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
+	} else if number, err := interpreter.MakeScriptNumber(op.Data, len(op.Data), true, true); err != nil {
+		return nil
+	} else {
+		p.Reward = number.Val.Uint64()
 	}
-	p.Reward = bytesToUint64(op.Data)
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
 	}
 	p.Difficulty = op.Op - 0x50
 
 	pos = suffix + len(*pow20Suffix) + 2
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
 	}
 	p.Id = string(op.Data)
 	if op, err = s.ReadOp(&pos); err != nil {
-		return nil, err
+		return nil
+	} else if number, err := interpreter.MakeScriptNumber(op.Data, len(op.Data), true, true); err != nil {
+		return nil
+	} else {
+		p.Supply = number.Val.Uint64()
 	}
-	p.Supply = bytesToUint64(op.Data)
-	if p.Txid, err = hex.DecodeString(txid); err != nil {
-		return nil, err
-	}
-	p.Vout = vout
 	p.LockingScript = s
-	return p, nil
+
+	return p
 }
 
 func (p *Pow20) BuildUnlockTx(nonce []byte, recipient *script.Address, changeAddress *script.Address) (*transaction.Transaction, error) {

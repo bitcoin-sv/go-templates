@@ -1,11 +1,11 @@
+github.com/b-open-io/go-sdk v1.1.22-0.20250329172752-ca68d5bf1bee h1:s3qTUcd2Ki13YloWN6uS4iuxNDJzR5BYBR/IKAUfoao=
+github.com/b-open-io/go-sdk v1.1.22-0.20250329172752-ca68d5bf1bee/go.mod h1:IWyjkqNHCxZejsqT+POnDVU8dNxBQfvFtc8j/tdtsFQ=
 github.com/bitcoinschema/go-aip v0.3.3 h1:hTe9xbjVA6yGZgVjXdsdSprq9HEoZYMfNOXJBJlbE3E=
 github.com/bitcoinschema/go-aip v0.3.3/go.mod h1:Dw/AS97LfD8Jq4efsZAFG6gTZAVl3pp5yMDA5UmhhJY=
 github.com/bitcoinschema/go-bob v0.5.2 h1:DKABIT6NCScvkeyGVCdpbxHb0EzcbXzKpvbS1SdPuuo=
 github.com/bitcoinschema/go-bob v0.5.2/go.mod h1:wiDgN//GF1u9OwA1TrxHZZuE9wDKtkW8T8xGf5RRFY0=
 github.com/bitcoinschema/go-bpu v0.2.2 h1:F/eIC8XhzwgptpA1+rgYQo8bzT51nVozdXpASsxPIno=
 github.com/bitcoinschema/go-bpu v0.2.2/go.mod h1:zppAI/4uAi+lSKBAc7QtWp98d+iczCB6CnGrGV75fAQ=
-github.com/bsv-blockchain/go-sdk v1.1.22 h1:R5o9spVEfCAt64We1CdyHkCuYT1sdTSfKXp3R10UMkI=
-github.com/bsv-blockchain/go-sdk v1.1.22/go.mod h1:d0HXzhHy21t+7z+LBpDhGyJSBJb8S5HiAmHsBtRKddQ=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

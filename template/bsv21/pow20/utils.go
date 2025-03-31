@@ -2,7 +2,6 @@ package pow20
 
 import (
 	"encoding/binary"
-	"math/big"
 
 	"github.com/bsv-blockchain/go-sdk/util"
 )
@@ -17,8 +16,4 @@ func uint64ToBytes(v uint64) []byte {
 		val = append(val, b)
 	}
 	return util.ReverseBytes(val)
-}
-
-func bytesToUint64(b []byte) uint64 {
-	return big.NewInt(0).SetBytes(util.ReverseBytes(b)).Uint64()
 }

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bitcoin-sv/go-templates/lib"
 	"github.com/bitcoin-sv/go-templates/template/inscription"
+	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
 )
 
@@ -19,13 +19,13 @@ var (
 )
 
 type Bsv21 struct {
-	Id       string  `json:"id,omitempty"`
-	Op       string  `json:"op"`
-	Symbol   *string `json:"sym,omitempty"`
-	Decimals uint8   `json:"dec"`
-	Icon     *string `json:"icon,omitempty"`
-	Amt      uint64  `json:"amt"`
-	Insc     *inscription.Inscription
+	Id       string                   `json:"id,omitempty"`
+	Op       string                   `json:"op"`
+	Symbol   *string                  `json:"sym,omitempty"`
+	Decimals *uint8                   `json:"dec,omitempty"`
+	Icon     *string                  `json:"icon,omitempty"`
+	Amt      uint64                   `json:"amt"`
+	Insc     *inscription.Inscription `json:"-"`
 }
 
 func Decode(scr *script.Script) *Bsv21 {
@@ -60,7 +60,8 @@ func Decode(scr *script.Script) *Bsv21 {
 			if val, err = strconv.ParseUint(dec, 10, 8); err != nil || val > 18 {
 				return nil
 			}
-			bsv21.Decimals = uint8(val)
+			decimals := uint8(val)
+			bsv21.Decimals = &decimals
 		}
 
 		switch bsv21.Op {
@@ -74,7 +75,7 @@ func Decode(scr *script.Script) *Bsv21 {
 		case string(OpTransfer), string(OpBurn):
 			if id, ok := data["id"]; !ok {
 				return nil
-			} else if _, err = lib.NewOutpointFromString(id); err != nil {
+			} else if _, err = overlay.NewOutpointFromString(id); err != nil {
 				return nil
 			} else {
 				bsv21.Id = id
@@ -83,5 +84,20 @@ func Decode(scr *script.Script) *Bsv21 {
 			return nil
 		}
 		return bsv21
+	}
+}
+
+func (b *Bsv21) Lock(lockingScript *script.Script) (*script.Script, error) {
+	if j, err := json.Marshal(b); err != nil {
+		return nil, err
+	} else {
+		insc := &inscription.Inscription{
+			File: inscription.File{
+				Content: j,
+				Type:    "application/bsv-20",
+			},
+			ScriptSuffix: *lockingScript,
+		}
+		return insc.Lock()
 	}
 }
