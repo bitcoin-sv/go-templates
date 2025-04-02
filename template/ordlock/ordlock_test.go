@@ -2,6 +2,8 @@ package ordlock
 
 import (
 	"encoding/hex"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/bsv-blockchain/go-sdk/script"
@@ -149,4 +151,75 @@ func TestDecodeInvalidScript(t *testing.T) {
 	invalidDataScript := script.NewFromBytes(append(append(OrdLockPrefix, []byte{0xFF, 0xEE, 0xDD}...), OrdLockSuffix...))
 	result = Decode(invalidDataScript)
 	require.Nil(t, result, "Expected nil result for script with invalid data")
+}
+
+// TestDecodeWithTestVector verifies that the OrdLock can properly decode
+// a transaction from a test vector
+func TestDecodeWithTestVector(t *testing.T) {
+	// Load the hex data from the file
+	hexData, err := os.ReadFile("testdata/690b213114926cd5a6f0785cb3e289afe9cde195972c1d344569c90530b8cbd1.hex")
+	require.NoError(t, err, "Failed to read hex data from file")
+
+	// Create a transaction from the bytes
+	tx, err := transaction.NewTransactionFromHex(strings.TrimSpace(string(hexData)))
+	require.NoError(t, err, "Failed to create transaction from bytes")
+
+	// Verify transaction ID matches expected
+	expectedTxID := "690b213114926cd5a6f0785cb3e289afe9cde195972c1d344569c90530b8cbd1"
+	require.Equal(t, expectedTxID, tx.TxID().String(), "Transaction ID should match expected value")
+
+	// Expected values
+	expectedSellerAddress := "15WPxBYNpjCXYCynyUp46CHFhRkiJTePBW"
+	expectedPrice := uint64(1000000) // 0.01 BSV
+	expectedOutputIndex := 0         // The OrdLock is expected in the first output
+
+	// Transaction structure validation
+	require.Equal(t, 3, len(tx.Outputs), "Transaction should have 3 outputs")
+	require.Equal(t, 2, len(tx.Inputs), "Transaction should have 2 inputs")
+
+	// Log transaction info
+	t.Logf("Transaction ID: %s", tx.TxID().String())
+	t.Logf("Transaction has %d inputs and %d outputs", len(tx.Inputs), len(tx.Outputs))
+
+	// Log output satoshis
+	for i, output := range tx.Outputs {
+		t.Logf("Output %d: %d satoshis", i, output.Satoshis)
+	}
+
+	// Check output sizes - update values based on the actual transaction
+	require.Equal(t, uint64(1), tx.Outputs[0].Satoshis, "First output should have 1 satoshi")
+	require.Equal(t, uint64(6000), tx.Outputs[1].Satoshis, "Second output should have 6000 satoshis")
+	require.Equal(t, uint64(3181), tx.Outputs[2].Satoshis, "Third output should have 3181 satoshis")
+
+	// Decode OrdLock from the expected output
+	ordLockData := Decode(tx.Outputs[expectedOutputIndex].LockingScript)
+	require.NotNil(t, ordLockData, "OrdLock should be found in output %d", expectedOutputIndex)
+
+	// Validate OrdLock fields
+	t.Logf("OrdLock Price: %d", ordLockData.Price)
+	t.Logf("OrdLock Seller: %s", ordLockData.Seller.AddressString)
+	t.Logf("OrdLock PayOut length: %d bytes", len(ordLockData.PayOut))
+
+	// Verify specific values
+	require.Equal(t, expectedSellerAddress, ordLockData.Seller.AddressString, "OrdLock should have expected seller address")
+	require.Equal(t, expectedPrice, ordLockData.Price, "OrdLock should have expected price")
+
+	// Verify PayOut structure
+	require.NotEmpty(t, ordLockData.PayOut, "PayOut data should not be empty")
+
+	// PricePer should be either valid or 0
+	t.Logf("OrdLock PricePer: %f", ordLockData.PricePer)
+	require.GreaterOrEqual(t, ordLockData.PricePer, 0.0, "PricePer should be non-negative")
+
+	// Examine the PayOut data more closely
+	if len(ordLockData.PayOut) > 0 {
+		// Use a helper function to get at most the first 10 bytes
+		previewLength := min(10, len(ordLockData.PayOut))
+		t.Logf("PayOut starts with bytes: %x", ordLockData.PayOut[:previewLength])
+
+		// Specifically check if the PayOut starts with OP_RETURN (0x6a)
+		if len(ordLockData.PayOut) > 0 && ordLockData.PayOut[0] == 0x6a {
+			t.Logf("PayOut data starts with OP_RETURN as expected")
+		}
+	}
 }
