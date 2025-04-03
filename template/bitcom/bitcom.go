@@ -36,7 +36,6 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 	pos++
 
 	for {
-		startPos := pos
 		pipePos := findPipe(scr, pos)
 		p := &BitcomProtocol{
 			Pos: pos,
@@ -46,14 +45,12 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 		} else {
 			p.Protocol = string(op.Data)
 		}
-
 		bitcom.Protocols = append(bitcom.Protocols, p)
 		if pipePos == -1 {
 			p.Script = (*scr)[pos:]
 			return bitcom
 		}
 		p.Script = (*scr)[pos:pipePos]
-		script.DecodeScript((*scr)[startPos:pipePos])
 		pos = pipePos + 2
 	}
 }
