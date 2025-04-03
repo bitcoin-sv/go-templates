@@ -1,8 +1,11 @@
 package bitcom
 
 import (
+	"encoding/base64"
+	"slices"
 	"strconv"
 
+	bsm "github.com/bsv-blockchain/go-sdk/compat/bsm"
 	"github.com/bsv-blockchain/go-sdk/script"
 )
 
@@ -15,6 +18,7 @@ type AIP struct {
 	Address      string `json:"address"`
 	Signature    string `json:"signature"`
 	FieldIndexes []int  `json:"fieldIndexes,omitempty"`
+	Valid        bool   `json:"valid,omitempty"`
 }
 
 // DecodeAIP decodes the AIP data from the transaction script
@@ -70,6 +74,26 @@ func DecodeAIP(b *Bitcom) []*AIP {
 					break // Stop if we encounter non-numeric data
 				}
 				aip.FieldIndexes = append(aip.FieldIndexes, index)
+			}
+
+			data := make([]byte, proto.Pos-len(b.ScriptPrefix)+len(chunks[0].Data)+len(chunks[1].Data)+len(chunks[2].Data))
+			idx := 0
+			data = append(data, script.OpRETURN)
+			for i, tape := range b.Tapes {
+				if i > 0 {
+					data = append(data, '|')
+				}
+				for _, cell := range tape {
+					if aip.FieldIndexes == nil || slices.Contains(aip.FieldIndexes, idx) {
+						data = append(data, cell.Data...)
+					}
+					idx++
+				}
+			}
+			if sig, err := base64.StdEncoding.DecodeString(aip.Signature); err != nil {
+				continue
+			} else if err := bsm.VerifyMessage(aip.Address, sig, data); err == nil {
+				aip.Valid = true
 			}
 
 			aips = append(aips, aip)

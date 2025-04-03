@@ -7,6 +7,7 @@ import (
 type Bitcom struct {
 	Protocols    []*BitcomProtocol `json:"protos"`
 	ScriptPrefix []byte            `json:"prefix,omitempty"`
+	Tapes        [][]*script.ScriptChunk
 }
 type BitcomProtocol struct {
 	Protocol string `json:"proto"`
@@ -36,6 +37,7 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 	pos++
 
 	for {
+		startPos := pos
 		pipePos := findPipe(scr, pos)
 		p := &BitcomProtocol{
 			Pos: pos,
@@ -45,12 +47,18 @@ func Decode(scr *script.Script) (bitcom *Bitcom) {
 		} else {
 			p.Protocol = string(op.Data)
 		}
+		if tape, err := script.DecodeScript((*scr)[startPos:pipePos]); err != nil {
+			return bitcom
+		} else if len(tape) > 0 {
+			bitcom.Tapes = append(bitcom.Tapes, tape)
+		}
 		bitcom.Protocols = append(bitcom.Protocols, p)
 		if pipePos == -1 {
 			p.Script = (*scr)[pos:]
 			return bitcom
 		}
 		p.Script = (*scr)[pos:pipePos]
+		script.DecodeScript((*scr)[startPos:pipePos])
 		pos = pipePos + 2
 	}
 }
