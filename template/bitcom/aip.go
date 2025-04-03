@@ -30,7 +30,7 @@ func DecodeAIP(b *Bitcom) []*AIP {
 		return aips
 	}
 
-	for _, proto := range b.Protocols {
+	for i, proto := range b.Protocols {
 		if proto.Protocol == AIPPrefix {
 			scr := script.NewFromBytes(proto.Script)
 			if scr == nil {
@@ -79,15 +79,17 @@ func DecodeAIP(b *Bitcom) []*AIP {
 			data := make([]byte, proto.Pos-len(b.ScriptPrefix)+len(chunks[0].Data)+len(chunks[1].Data)+len(chunks[2].Data))
 			idx := 0
 			data = append(data, script.OpRETURN)
-			for i, tape := range b.Tapes {
-				if i > 0 {
-					data = append(data, '|')
-				}
-				for _, cell := range tape {
-					if aip.FieldIndexes == nil || slices.Contains(aip.FieldIndexes, idx) {
-						data = append(data, cell.Data...)
+			for _, p := range b.Protocols[:i] {
+				if tape, err := script.DecodeScript(p.Script); err != nil {
+					continue
+				} else {
+					for _, op := range tape {
+						if aip.FieldIndexes == nil || slices.Contains(aip.FieldIndexes, idx) {
+							data = append(data, op.Data...)
+						}
+						idx++
 					}
-					idx++
+					data = append(data, '|')
 				}
 			}
 			if sig, err := base64.StdEncoding.DecodeString(aip.Signature); err != nil {
