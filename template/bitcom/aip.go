@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"slices"
 	"strconv"
+	"strings"
+	"unicode"
 
 	bsm "github.com/bsv-blockchain/go-sdk/compat/bsm"
 	"github.com/bsv-blockchain/go-sdk/script"
@@ -61,7 +63,7 @@ func DecodeAIP(b *Bitcom) []*AIP {
 
 			// Read SIGNATURE (third chunk)
 			if len(chunks) > 2 {
-				aip.Signature = string(chunks[2].Data)
+				aip.Signature = base64.StdEncoding.EncodeToString(chunks[2].Data)
 			} else {
 				continue
 			}
@@ -90,17 +92,20 @@ func validateAip(aip *AIP, protos []*BitcomProtocol) {
 	idx := 0
 	data = append(data, script.OpRETURN)
 	for _, p := range protos {
+		data = append(data, p.Protocol...)
 		if tape, err := script.DecodeScript(p.Script); err != nil {
 			continue
 		} else {
 			for _, op := range tape {
-				if aip.FieldIndexes == nil || slices.Contains(aip.FieldIndexes, idx) {
-					data = append(data, op.Data...)
+				if (op.Op > 0 || op.Op <= 0x4e) && (aip.FieldIndexes == nil || slices.Contains(aip.FieldIndexes, idx)) {
+					data = append(data, strings.TrimSpace(string(op.Data))...)
+				} else if op.Op > 0x43 && unicode.IsPrint(rune(op.Op)) {
+					data = append(data, op.Op)
 				}
 				idx++
 			}
-			data = append(data, '|')
 		}
+		data = append(data, '|')
 	}
 	if sig, err := base64.StdEncoding.DecodeString(aip.Signature); err != nil {
 		return

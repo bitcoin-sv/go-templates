@@ -325,6 +325,7 @@ func TestDecodeAIPFromTestVector(t *testing.T) {
 	require.Equal(t, "BITCOIN_ECDSA", aips[1].Algorithm, "AIP 2 should have BITCOIN_ECDSA algorithm")
 	require.Equal(t, "19nknLhRnGKRR3hobeFuuqmHUMiNTKZHsR", aips[1].Address, "AIP 2 should have expected address")
 	require.NotEmpty(t, aips[1].Signature, "AIP 2 should have signature")
+	require.True(t, aips[0].Valid, "AIP 1 should be valid")
 }
 
 // TestDecodeAIPBasic tests the basic functionality of the AIP decoder
