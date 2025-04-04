@@ -35,7 +35,7 @@ func TestDecodeLTMFromTestVector(t *testing.T) {
 	// Try to find an LTM contract in the outputs
 	var ltmData *LockToMint
 	ltmFound := false
-	var ltmJsonData map[string]interface{}
+	var ltmJsonData map[string]any
 
 	for i, output := range tx.Outputs {
 		t.Logf("Checking output %d with %d satoshis", i, output.Satoshis)
@@ -120,7 +120,7 @@ func TestDecodeLTMFromTestVector(t *testing.T) {
 // TestCreateLTMInscription tests creating an LTM token inscription
 func TestCreateLTMInscription(t *testing.T) {
 	// Create a new LTM contract definition as JSON
-	ltmContract := map[string]interface{}{
+	ltmContract := map[string]any{
 		"p":             "bsv-20",
 		"op":            "deploy",
 		"sym":           "GOLD",
@@ -143,9 +143,12 @@ func TestCreateLTMInscription(t *testing.T) {
 		},
 	}
 
-	// Add the file type to the inscription
-	contentType := []byte("application/bsv-20")
-	insc.Bitcom = map[string][]byte{"1": contentType}
+	// Create a Bitcom protocol in the script suffix instead
+	contentTypeMap := &script.Script{}
+	_ = contentTypeMap.AppendOpcodes(script.OpFALSE, script.OpRETURN)
+	_ = contentTypeMap.AppendPushData([]byte("1"))
+	_ = contentTypeMap.AppendPushData([]byte("application/bsv-20"))
+	insc.ScriptSuffix = *contentTypeMap
 
 	// Lock the inscription to create a script
 	ordiScript, err := insc.Lock()
@@ -157,7 +160,7 @@ func TestCreateLTMInscription(t *testing.T) {
 	require.NotNil(t, decodedInsc, "Should be able to decode the inscription")
 
 	// Since the file type isn't preserved in the Lock method, we'll check the content
-	var decodedJson map[string]interface{}
+	var decodedJson map[string]any
 	err = json.Unmarshal(decodedInsc.File.Content, &decodedJson)
 	require.NoError(t, err, "Failed to unmarshal inscription content")
 
@@ -175,7 +178,7 @@ func TestCreateLTMInscription(t *testing.T) {
 // TestCreateLTMTransaction tests creating a complete BSV transaction with an LTM token inscription
 func TestCreateLTMTransaction(t *testing.T) {
 	// Create a new LTM contract definition as JSON
-	ltmContract := map[string]interface{}{
+	ltmContract := map[string]any{
 		"p":             "bsv-20",
 		"op":            "deploy",
 		"sym":           "SILVER",
@@ -198,9 +201,12 @@ func TestCreateLTMTransaction(t *testing.T) {
 		},
 	}
 
-	// Add the file type to the inscription
-	contentType := []byte("application/bsv-20")
-	insc.Bitcom = map[string][]byte{"1": contentType}
+	// Create a Bitcom protocol in the script suffix instead
+	contentTypeMap := &script.Script{}
+	_ = contentTypeMap.AppendOpcodes(script.OpFALSE, script.OpRETURN)
+	_ = contentTypeMap.AppendPushData([]byte("1"))
+	_ = contentTypeMap.AppendPushData([]byte("application/bsv-20"))
+	insc.ScriptSuffix = *contentTypeMap
 
 	// Create a private key for testing
 	privKey, err := ec.NewPrivateKey()
@@ -263,7 +269,7 @@ func TestCreateLTMTransaction(t *testing.T) {
 	require.NotNil(t, decodedInsc, "Should be able to decode the inscription from the transaction output")
 
 	// Verify the LTM contract in the inscription
-	var decodedJson map[string]interface{}
+	var decodedJson map[string]any
 	err = json.Unmarshal(decodedInsc.File.Content, &decodedJson)
 	require.NoError(t, err, "Failed to unmarshal inscription content")
 

@@ -45,7 +45,7 @@ func TestDecodePOW20FromTestVector(t *testing.T) {
 	var inscData *inscription.Inscription
 
 	// Define a simple map for the JSON content
-	var jsonData map[string]interface{}
+	var jsonData map[string]any
 
 	// Flag to track if we found the POW20 contract
 	foundPOW20 := false

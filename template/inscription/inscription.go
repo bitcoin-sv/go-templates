@@ -17,11 +17,10 @@ type File struct {
 }
 
 type Inscription struct {
-	File         File              `json:"file,omitempty"`
-	Parent       *lib.Outpoint     `json:"parent,omitempty"`
-	Bitcom       map[string][]byte `json:"bitcom,omitempty"`
-	ScriptPrefix []byte            `json:"prefix,omitempty"`
-	ScriptSuffix []byte            `json:"suffix,omitempty"`
+	File         File          `json:"file,omitempty"`
+	Parent       *lib.Outpoint `json:"parent,omitempty"`
+	ScriptPrefix []byte        `json:"prefix,omitempty"`
+	ScriptSuffix []byte        `json:"suffix,omitempty"`
 }
 
 func Decode(scr *script.Script) *Inscription {
@@ -48,12 +47,6 @@ func Decode(scr *script.Script) *Inscription {
 				} else if len(op.Data) == 1 {
 					field = int(op.Data[0])
 				} else if len(op.Data) > 1 {
-					if add, err := script.NewAddressFromString(string(op.Data)); err == nil {
-						if insc.Bitcom == nil {
-							insc.Bitcom = make(map[string][]byte)
-						}
-						insc.Bitcom[add.AddressString] = op2.Data
-					}
 					continue
 				}
 				switch field {
@@ -93,12 +86,6 @@ func (i *Inscription) Lock() (*script.Script, error) {
 	if i.Parent != nil {
 		_ = s.AppendOpcodes(script.Op3)
 		_ = s.AppendPushData(i.Parent.Bytes())
-	}
-	if i.Bitcom != nil {
-		for k, v := range i.Bitcom {
-			_ = s.AppendPushData([]byte(k))
-			_ = s.AppendPushData(v)
-		}
 	}
 	_ = s.AppendOpcodes(script.Op0)
 	_ = s.AppendPushData(i.File.Content)

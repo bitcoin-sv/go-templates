@@ -13,10 +13,10 @@ import (
 
 // TestVector represents a single test case
 type TestVector struct {
-	Name           string                 `json:"name"`
-	Description    string                 `json:"description"`
-	RawTransaction string                 `json:"raw_transaction,omitempty"`
-	Expected       map[string]interface{} `json:"expected"`
+	Name           string         `json:"name"`
+	Description    string         `json:"description"`
+	RawTransaction string         `json:"raw_transaction,omitempty"`
+	Expected       map[string]any `json:"expected"`
 }
 
 // TestVectors represents a collection of test cases
