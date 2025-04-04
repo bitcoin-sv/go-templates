@@ -3,9 +3,12 @@ package pow20
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/bitcoin-sv/go-templates/template/bsv21"
 	"github.com/bsv-blockchain/go-sdk/chainhash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
@@ -14,26 +17,76 @@ import (
 	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 )
 
+// Pow20 represents a POW20 token, extending BSV21 with POW20-specific fields
 type Pow20 struct {
-	Txid          []byte         `json:"txid"`
-	Vout          uint32         `json:"vout"`
-	Symbol        string         `json:"sym"`
-	Max           uint64         `json:"max"`
-	Dec           uint8          `json:"dec"`
-	Reward        uint64         `json:"cur"`
-	Difficulty    uint8          `json:"dif"`
-	Id            string         `json:"id"`
-	Supply        uint64         `json:"sup"`
-	LockingScript *script.Script `json:"lockingScript"`
+	// BSV21 base token data
+	Bsv21         *bsv21.Bsv21 // Embed the BSV21 token data
+	Txid          []byte       `json:"txid,omitempty"`
+	Vout          uint32       `json:"vout,omitempty"`
+	MaxSupply     uint64       `json:"maxSupply,omitempty"` // Max supply
+	Reward        uint64       `json:"reward,omitempty"`    // Starting reward
+	Difficulty    uint8        `json:"difficulty,omitempty"`
+	Supply        uint64       `json:"supply,omitempty"` // Current supply
+	LockingScript *script.Script
 }
 
+// Pow20Unlocker is a Pow20 with fields for unlocking
 type Pow20Unlocker struct {
-	Pow20
-	Nonce     []byte          `json:"nonce"`
-	Recipient *script.Address `json:"recipient"`
+	Pow20                     // Embed Pow20
+	Nonce     []byte          `json:"nonce,omitempty"`
+	Recipient *script.Address `json:"recipient,omitempty"`
 }
 
+// Decode decodes a Pow20 token from a script
 func Decode(s *script.Script) *Pow20 {
+	if s == nil {
+		return nil
+	}
+
+	// First try to decode as a BSV21 token
+	bsv21Token := bsv21.Decode(s)
+	if bsv21Token != nil && bsv21Token.Insc != nil && bsv21Token.Insc.File.Type == "application/bsv-20" {
+		// Try to parse the JSON data
+		var jsonData map[string]any
+		if err := json.Unmarshal(bsv21Token.Insc.File.Content, &jsonData); err != nil {
+			return nil
+		}
+
+		// Check if it's a POW20 token by looking for the contract field
+		if contractType, ok := jsonData["contract"].(string); ok && contractType == "pow-20" {
+			// This is a JSON-based POW20 token
+			pow20 := &Pow20{
+				Bsv21:         bsv21Token,
+				LockingScript: s,
+			}
+
+			// Parse POW20-specific fields from the JSON
+			if max, ok := jsonData["maxSupply"].(string); ok {
+				maxVal, err := strconv.ParseUint(max, 10, 64)
+				if err == nil {
+					pow20.MaxSupply = maxVal
+				}
+			}
+
+			if difficulty, ok := jsonData["difficulty"].(string); ok {
+				diffVal, err := strconv.ParseUint(difficulty, 10, 8)
+				if err == nil {
+					pow20.Difficulty = uint8(diffVal)
+				}
+			}
+
+			if reward, ok := jsonData["startingReward"].(string); ok {
+				rewardVal, err := strconv.ParseUint(reward, 10, 64)
+				if err == nil {
+					pow20.Reward = rewardVal
+				}
+			}
+
+			return pow20
+		}
+	}
+
+	// Fall back to traditional script-based parsing for non-JSON POW20 tokens
 	prefix := bytes.Index(*s, *pow20Prefix)
 	if prefix == -1 {
 		return nil
@@ -46,11 +99,19 @@ func Decode(s *script.Script) *Pow20 {
 	var err error
 	var op *script.ScriptChunk
 
-	p := &Pow20{}
+	p := &Pow20{
+		LockingScript: s,
+	}
+
+	// Create a basic BSV21 token structure
+	p.Bsv21 = &bsv21.Bsv21{}
+
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	}
-	p.Symbol = string(op.Data)
+	symStr := string(op.Data)
+	p.Bsv21.Symbol = &symStr
+
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	}
@@ -59,14 +120,16 @@ func Decode(s *script.Script) *Pow20 {
 	} else if number, err := interpreter.MakeScriptNumber(op.Data, len(op.Data), true, true); err != nil {
 		return nil
 	} else {
-		p.Max = number.Val.Uint64()
+		p.MaxSupply = number.Val.Uint64()
 	}
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	} else if op.Op >= script.Op1 && op.Op <= script.Op16 {
-		p.Dec = op.Op - 0x50
+		dec := uint8(op.Op - 0x50)
+		p.Bsv21.Decimals = &dec
 	} else if len(op.Data) == 1 {
-		p.Dec = op.Data[0]
+		dec := op.Data[0]
+		p.Bsv21.Decimals = &dec
 	}
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
@@ -84,7 +147,7 @@ func Decode(s *script.Script) *Pow20 {
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	}
-	p.Id = string(op.Data)
+	p.Bsv21.Id = string(op.Data)
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	} else if number, err := interpreter.MakeScriptNumber(op.Data, len(op.Data), true, true); err != nil {
@@ -92,7 +155,6 @@ func Decode(s *script.Script) *Pow20 {
 	} else {
 		p.Supply = number.Val.Uint64()
 	}
-	p.LockingScript = s
 
 	return p
 }
@@ -121,7 +183,7 @@ func (p *Pow20) BuildUnlockTx(nonce []byte, recipient *script.Address, changeAdd
 			Satoshis:      1,
 		})
 	}
-	rewardScript := BuildInscription(p.Id, p.Reward)
+	rewardScript := BuildInscription(p.Bsv21.Id, p.Reward)
 	_ = rewardScript.AppendOpcodes(script.OpDUP, script.OpHASH160)
 	_ = rewardScript.AppendPushData(recipient.PublicKeyHash)
 	_ = rewardScript.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIG)
@@ -130,7 +192,8 @@ func (p *Pow20) BuildUnlockTx(nonce []byte, recipient *script.Address, changeAdd
 		Satoshis:      1,
 	})
 	if changeAddress != nil {
-		change := &transaction.TransactionOutput{
+		var change *transaction.TransactionOutput
+		change = &transaction.TransactionOutput{
 			Change: true,
 		}
 		change.LockingScript, _ = p2pkh.Lock(changeAddress)
@@ -154,14 +217,24 @@ func BuildInscription(id string, amt uint64) *script.Script {
 }
 
 func (p *Pow20) Lock(supply uint64) *script.Script {
-	s := BuildInscription(p.Id, supply)
+	s := BuildInscription(p.Bsv21.Id, supply)
 	s = script.NewFromBytes(append(*s, *pow20Prefix...))
-	_ = s.AppendPushData([]byte(p.Symbol))
-	_ = s.AppendPushData(uint64ToBytes(p.Max))
-	if p.Dec <= 16 {
-		_ = s.AppendOpcodes(byte(p.Dec + 0x50))
+	symbolStr := ""
+	if p.Bsv21 != nil && p.Bsv21.Symbol != nil {
+		symbolStr = *p.Bsv21.Symbol
+	}
+	_ = s.AppendPushData([]byte(symbolStr))
+	_ = s.AppendPushData(uint64ToBytes(p.MaxSupply))
+
+	decimals := uint8(0)
+	if p.Bsv21 != nil && p.Bsv21.Decimals != nil {
+		decimals = *p.Bsv21.Decimals
+	}
+
+	if decimals <= 16 {
+		_ = s.AppendOpcodes(byte(decimals + 0x50))
 	} else {
-		_ = s.AppendPushData([]byte{p.Dec})
+		_ = s.AppendPushData([]byte{decimals})
 	}
 	_ = s.AppendPushData(uint64ToBytes(p.Reward))
 	_ = s.AppendOpcodes(p.Difficulty + 0x50)
@@ -169,7 +242,7 @@ func (p *Pow20) Lock(supply uint64) *script.Script {
 
 	state := script.NewFromBytes([]byte{})
 	_ = state.AppendOpcodes(script.OpRETURN, script.OpFALSE)
-	_ = state.AppendPushData([]byte(p.Id))
+	_ = state.AppendPushData([]byte(p.Bsv21.Id))
 	_ = state.AppendPushData(uint64ToBytes(supply))
 	stateSize := uint32(len(*state) - 1)
 	stateScript := binary.LittleEndian.AppendUint32(*state, stateSize)

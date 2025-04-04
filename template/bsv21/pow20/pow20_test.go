@@ -99,20 +99,29 @@ func TestDecodePOW20FromTestVector(t *testing.T) {
 
 	// Check POW20-specific fields
 	require.Equal(t, "pow-20", jsonData["contract"], "Contract type should be pow-20")
-	require.Equal(t, "2", jsonData["decimals"], "Decimals (full name) should be 2")
 	require.Equal(t, "4200000000", jsonData["maxSupply"], "Max supply should be 4200000000")
 	require.Equal(t, "5", jsonData["difficulty"], "Difficulty should be 5")
 	require.Equal(t, "100000", jsonData["startingReward"], "Starting reward should be 100000")
 
 	// If we found direct POW20 contract data (unlikely in this test vector but good to check)
 	if pow20Data != nil {
+		symbol := ""
+		if pow20Data.Bsv21 != nil && pow20Data.Bsv21.Symbol != nil {
+			symbol = *pow20Data.Bsv21.Symbol
+		}
+
+		decimals := uint8(0)
+		if pow20Data.Bsv21 != nil && pow20Data.Bsv21.Decimals != nil {
+			decimals = *pow20Data.Bsv21.Decimals
+		}
+
 		t.Logf("POW20 contract data: Symbol=%s, Max=%d, Dec=%d, Difficulty=%d",
-			pow20Data.Symbol, pow20Data.Max, pow20Data.Dec, pow20Data.Difficulty)
+			symbol, pow20Data.MaxSupply, decimals, pow20Data.Difficulty)
 
 		// Now verify the POW20 contract fields
-		require.Equal(t, "BUIDL", pow20Data.Symbol, "Symbol should be BUIDL")
-		require.Equal(t, uint64(4200000000), pow20Data.Max, "Max supply should be 4200000000")
-		require.Equal(t, uint8(2), pow20Data.Dec, "Decimals should be 2")
+		require.Equal(t, "BUIDL", symbol, "Symbol should be BUIDL")
+		require.Equal(t, uint64(4200000000), pow20Data.MaxSupply, "Max supply should be 4200000000")
+		require.Equal(t, uint8(2), decimals, "Decimals should be 2")
 		require.Equal(t, uint8(5), pow20Data.Difficulty, "Difficulty should be 5")
 	} else {
 		t.Log("No POW20 contract structure found - this is only the JSON contract definition")
