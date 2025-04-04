@@ -10,6 +10,7 @@ import (
 	"github.com/bitcoin-sv/go-templates/template/bitcom"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -92,6 +93,7 @@ func TestDecode(t *testing.T) {
 					Algorithm:      AlgoECDSA,
 					SignerAddress:  "1AddressBTC12345678",
 					SignatureValue: base64.StdEncoding.EncodeToString([]byte("signature1234567890")),
+					Valid:          true, // We now trust transaction signatures without message
 				},
 			},
 		},
@@ -106,8 +108,7 @@ func TestDecode(t *testing.T) {
 							_ = s.AppendPushData([]byte(string(AlgoSHA256ECDSA)))
 							_ = s.AppendPushData([]byte("1AddressBTC12345678"))
 							_ = s.AppendPushData([]byte("abcdef1234567890"))
-							_ = s.AppendPushData([]byte("type-ignored")) // This field is now ignored
-							_ = s.AppendPushData([]byte("Hello, world!"))
+							_ = s.AppendPushData([]byte("Hello, world!")) // This is now the message field directly
 							_ = s.AppendPushData([]byte("random-nonce-123"))
 							return *s
 						}(),
@@ -158,11 +159,13 @@ func TestDecode(t *testing.T) {
 					Algorithm:      AlgoECDSA,
 					SignerAddress:  "1Address1",
 					SignatureValue: base64.StdEncoding.EncodeToString([]byte("signature1")),
+					Valid:          true, // We now trust transaction signatures without message
 				},
 				{
 					Algorithm:      AlgoSHA256ECDSA,
 					SignerAddress:  "1Address2",
 					SignatureValue: base64.StdEncoding.EncodeToString([]byte("signature2")),
+					Valid:          true, // We now trust transaction signatures without message
 				},
 			},
 		},
@@ -185,7 +188,7 @@ func TestDecode(t *testing.T) {
 			expected: []*Sigma{},
 		},
 		{
-			name: "Sigma with binary type field (now ignored)",
+			name: "Sigma with message field",
 			bitcom: &bitcom.Bitcom{
 				Protocols: []*bitcom.BitcomProtocol{
 					{
@@ -195,7 +198,7 @@ func TestDecode(t *testing.T) {
 							_ = s.AppendPushData([]byte(string(AlgoECDSA)))
 							_ = s.AppendPushData([]byte("1AddressBTC12345678"))
 							_ = s.AppendPushData([]byte("binary-signature-data"))
-							_ = s.AppendPushData([]byte("binary")) // This type field is now ignored
+							_ = s.AppendPushData([]byte("This is the message"))
 							return *s
 						}(),
 						Pos: 0,
@@ -207,6 +210,7 @@ func TestDecode(t *testing.T) {
 					Algorithm:      AlgoECDSA,
 					SignerAddress:  "1AddressBTC12345678",
 					SignatureValue: base64.StdEncoding.EncodeToString([]byte("binary-signature-data")),
+					Message:        "This is the message",
 				},
 			},
 		},
@@ -387,3 +391,118 @@ func TestDecodeWithSigmaTestVector(t *testing.T) {
 }
 
 // NOTE: TestDecodeWithTestVector has been removed as it will be moved to the ordlock package
+
+func TestVerify(t *testing.T) {
+	tests := []struct {
+		name           string
+		sigmaSignature *Sigma
+		expectValid    bool
+	}{
+		{
+			name: "Valid BSM signature",
+			sigmaSignature: &Sigma{
+				Algorithm:     AlgoBSM,
+				SignerAddress: "1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz",
+				// This is a valid signature for the message "Hello, World!" from address 1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz
+				SignatureValue: "H89DSY12iMmrF16T4aDPwFcqrtuGxyoT69yTBH4GqXyzNZ+POVhxV5FLAvHdwKmJ0IhQT/w7JQpTg0XBZ5zeJ+c=",
+				Message:        "Hello, World!",
+			},
+			expectValid: true,
+		},
+		{
+			name: "Invalid BSM signature (wrong signature)",
+			sigmaSignature: &Sigma{
+				Algorithm:     AlgoBSM,
+				SignerAddress: "1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz",
+				// This is an invalid signature
+				SignatureValue: "H00000012iMmrF16T4aDPwFcqrtuGxyoT69yTBH4GqXyzNZ+POVhxV5FLAvHdwKmJ0IhQT/w7JQpTg0XBZ5zeJ+c=",
+				Message:        "Hello, World!",
+			},
+			expectValid: false,
+		},
+		{
+			name: "Invalid BSM signature (wrong address)",
+			sigmaSignature: &Sigma{
+				Algorithm:     AlgoBSM,
+				SignerAddress: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", // Wrong address
+				// This is a valid signature for the message "Hello, World!" from address 1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz
+				SignatureValue: "H89DSY12iMmrF16T4aDPwFcqrtuGxyoT69yTBH4GqXyzNZ+POVhxV5FLAvHdwKmJ0IhQT/w7JQpTg0XBZ5zeJ+c=",
+				Message:        "Hello, World!",
+			},
+			expectValid: false,
+		},
+		{
+			name: "Invalid BSM signature (wrong message)",
+			sigmaSignature: &Sigma{
+				Algorithm:     AlgoBSM,
+				SignerAddress: "1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz",
+				// This is a valid signature for the message "Hello, World!" from address 1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz
+				SignatureValue: "H89DSY12iMmrF16T4aDPwFcqrtuGxyoT69yTBH4GqXyzNZ+POVhxV5FLAvHdwKmJ0IhQT/w7JQpTg0XBZ5zeJ+c=",
+				Message:        "Modified message",
+			},
+			expectValid: false,
+		},
+		{
+			name: "Missing required data",
+			sigmaSignature: &Sigma{
+				Algorithm:      AlgoBSM,
+				SignerAddress:  "", // Missing address
+				SignatureValue: "", // Missing signature
+				Message:        "", // Missing message
+			},
+			expectValid: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.sigmaSignature.Verify()
+
+			if tt.expectValid {
+				assert.NoError(t, err, "Verification should succeed")
+				assert.True(t, tt.sigmaSignature.Valid, "Signature should be marked as valid")
+			} else {
+				if tt.sigmaSignature.SignerAddress == "" || tt.sigmaSignature.SignatureValue == "" || tt.sigmaSignature.Message == "" {
+					assert.Error(t, err, "Verification should fail due to missing data")
+				} else {
+					assert.Error(t, err, "Verification should fail")
+					assert.False(t, tt.sigmaSignature.Valid, "Signature should be marked as invalid")
+				}
+			}
+		})
+	}
+}
+
+func TestDecodeSigmaWithVerification(t *testing.T) {
+	// Create a simple Sigma bitcom protocol with a valid signature
+	s := &script.Script{}
+	_ = s.AppendPushData([]byte("BSM"))
+	_ = s.AppendPushData([]byte("1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz"))
+
+	// Decode the valid signature from base64
+	sigBytes, err := base64.StdEncoding.DecodeString("H89DSY12iMmrF16T4aDPwFcqrtuGxyoT69yTBH4GqXyzNZ+POVhxV5FLAvHdwKmJ0IhQT/w7JQpTg0XBZ5zeJ+c=")
+	require.NoError(t, err)
+
+	_ = s.AppendPushData(sigBytes)
+	_ = s.AppendPushData([]byte("Hello, World!")) // Message
+
+	// Create a BitCom protocol
+	bc := &bitcom.Bitcom{
+		Protocols: []*bitcom.BitcomProtocol{
+			{
+				Protocol: SIGMAPrefix,
+				Script:   *s,
+			},
+		},
+	}
+
+	// Decode and verify
+	sigmas := Decode(bc)
+	require.Len(t, sigmas, 1, "Should decode one Sigma signature")
+
+	// Check that it was validated correctly
+	assert.True(t, sigmas[0].Valid, "Signature should be marked as valid")
+	assert.Equal(t, "BSM", string(sigmas[0].Algorithm))
+	assert.Equal(t, "1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz", sigmas[0].SignerAddress)
+	assert.Equal(t, "Hello, World!", sigmas[0].Message)
+}
