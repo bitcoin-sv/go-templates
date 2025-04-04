@@ -81,14 +81,16 @@ func (i *Inscription) Lock() (*script.Script, error) {
 	s := script.NewFromBytes(i.ScriptPrefix)
 	_ = s.AppendOpcodes(script.Op0, script.OpIF)
 	_ = s.AppendPushData([]byte("ord"))
+
+	// Add file type if available
+	// if i.File.Type != "" {
 	_ = s.AppendOpcodes(script.Op1)
-	_ = s.AppendPushData(i.File.Content)
-	if i.Parent != nil {
-		_ = s.AppendOpcodes(script.Op3)
-		_ = s.AppendPushData(i.Parent.Bytes())
-	}
+	_ = s.AppendPushDataString(i.File.Type)
+
+	// Add content
 	_ = s.AppendOpcodes(script.Op0)
 	_ = s.AppendPushData(i.File.Content)
+
 	_ = s.AppendOpcodes(script.OpENDIF)
 	return script.NewFromBytes(append(*s, i.ScriptSuffix...)), nil
 }

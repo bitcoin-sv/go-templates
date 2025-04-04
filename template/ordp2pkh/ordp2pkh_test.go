@@ -46,13 +46,9 @@ func TestOrdP2PKHDecode(t *testing.T) {
 	// Verify that the decoded inscription data is correct
 	require.NotNil(t, decoded.Inscription, "Inscription part is missing")
 
-	// In the current implementation, the content appears to be stored in the Type field
-	// Let's just check what we know we can find
-	t.Log("Inscription Type field:", decoded.Inscription.File.Type)
-	t.Log("Inscription Content length:", len(decoded.Inscription.File.Content))
-
-	// Check that the content is in the Type field
-	require.Equal(t, "Hello, OrdP2PKH!", decoded.Inscription.File.Type)
+	// Check that the content is in Content field now
+	require.Equal(t, "text/plain", decoded.Inscription.File.Type)
+	require.Equal(t, "Hello, OrdP2PKH!", string(decoded.Inscription.File.Content))
 
 	// Verify that the decoded P2PKH address is correct
 	require.NotNil(t, decoded.Address, "Address part is missing")
@@ -154,12 +150,9 @@ func TestOrdP2PKHEndToEnd(t *testing.T) {
 	require.NotNil(t, decoded.Inscription)
 	require.NotNil(t, decoded.Address)
 
-	// Check inscription content - in the current implementation content is in Type field
-	t.Log("Inscription Type field:", decoded.Inscription.File.Type)
-	t.Log("Inscription Content length:", len(decoded.Inscription.File.Content))
-
-	// Check that the content is in the Type field
-	require.Equal(t, "Simulated image data", decoded.Inscription.File.Type)
+	// Check that the content is in Content field now
+	require.Equal(t, "image/png", decoded.Inscription.File.Type)
+	require.Equal(t, "Simulated image data", string(decoded.Inscription.File.Content))
 
 	// Check P2PKH address
 	require.Equal(t, address.AddressString, decoded.Address.AddressString)
@@ -241,6 +234,10 @@ func TestOrdP2PKHWithMapMetadata(t *testing.T) {
 	require.NotNil(t, decoded.Inscription, "No inscription in decoded result")
 	require.NotNil(t, decoded.Address, "No address in decoded result")
 	require.Equal(t, address.AddressString, decoded.Address.AddressString, "Address doesn't match")
+
+	// Check that the content is in Content field now
+	require.Equal(t, "image/png", decoded.Inscription.File.Type)
+	require.Equal(t, "NFT image data", string(decoded.Inscription.File.Content))
 
 	// Create MAP metadata for an NFT
 	metadata := &bitcom.Map{
