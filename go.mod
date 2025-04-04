@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/bitcoinschema/go-bpu v0.2.2 // indirect
+	github.com/bitcoinschema/go-sigma v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

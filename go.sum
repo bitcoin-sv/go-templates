@@ -6,6 +6,8 @@ github.com/bitcoinschema/go-bob v0.5.2 h1:DKABIT6NCScvkeyGVCdpbxHb0EzcbXzKpvbS1S
 github.com/bitcoinschema/go-bob v0.5.2/go.mod h1:wiDgN//GF1u9OwA1TrxHZZuE9wDKtkW8T8xGf5RRFY0=
 github.com/bitcoinschema/go-bpu v0.2.2 h1:F/eIC8XhzwgptpA1+rgYQo8bzT51nVozdXpASsxPIno=
 github.com/bitcoinschema/go-bpu v0.2.2/go.mod h1:zppAI/4uAi+lSKBAc7QtWp98d+iczCB6CnGrGV75fAQ=
+github.com/bitcoinschema/go-sigma v0.1.2 h1:tFNlZZ8QnSokHlWL/39+NCzC1x2lTO3uOJhcvBkC1TE=
+github.com/bitcoinschema/go-sigma v0.1.2/go.mod h1:9mkkvkONfiSCPPTQimJYNp+5darSfSxZbuD225AGq9M=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
