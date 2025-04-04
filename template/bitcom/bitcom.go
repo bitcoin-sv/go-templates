@@ -61,7 +61,7 @@ func (b *Bitcom) Lock() *script.Script {
 		_ = s.AppendOpcodes(script.OpRETURN)
 		for i, p := range b.Protocols {
 			_ = s.AppendPushData([]byte(p.Protocol))
-			_ = s.AppendPushData(p.Script)
+			s = script.NewFromBytes(append(*s, p.Script...))
 			if i < len(b.Protocols)-1 {
 				_ = s.AppendPushData([]byte("|"))
 			}
@@ -70,8 +70,7 @@ func (b *Bitcom) Lock() *script.Script {
 	return s
 }
 
-func findReturn(scr *script.Script, from int) (pos int) {
-	pos = -1
+func findReturn(scr *script.Script, from int) int {
 	if scr != nil {
 		i := from
 		for i < len(*scr) {
@@ -81,22 +80,20 @@ func findReturn(scr *script.Script, from int) (pos int) {
 			}
 		}
 	}
-	return
+	return -1
 }
 
-func findPipe(scr *script.Script, from int) (pos int) {
-	pos = -1
+func findPipe(scr *script.Script, from int) int {
 	if scr != nil {
 		i := from
 		for i < len(*scr) {
 			startPos := i
 			if op, err := scr.ReadOp(&i); err == nil && op.Op == script.OpDATA1 && op.Data[0] == '|' {
-
 				return startPos
 			}
 		}
 	}
-	return
+	return -1
 }
 
 // ToScript converts a []byte to a script.Script or returns a script directly

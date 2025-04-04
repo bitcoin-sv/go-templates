@@ -3,6 +3,7 @@ package bitcom
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -101,27 +102,27 @@ func TestDecodeBAP(t *testing.T) {
 			// Check specific attributes based on the BAP type
 			switch bap.Type {
 			case ID:
-				t.Logf("BAP ID: %s", bap.Identity)
+				t.Logf("BAP ID: %s", bap.IDKey)
 				t.Logf("BAP Address: %s", bap.Address)
-				assert.NotEmpty(t, bap.Identity, "Identity key should not be empty for ID type")
+				assert.NotEmpty(t, bap.IDKey, "Identity key should not be empty for ID type")
 				assert.NotEmpty(t, bap.Address, "Address should not be empty for ID type")
 
 			case ATTEST:
-				t.Logf("BAP ATTEST to TXID: %s", bap.Identity)
-				t.Logf("BAP Sequence Number: %s", bap.SequenceNum)
-				assert.NotEmpty(t, bap.Identity, "TXID should not be empty for ATTEST type")
-				assert.NotEmpty(t, bap.SequenceNum, "Sequence number should not be empty for ATTEST type")
+				t.Logf("BAP ATTEST to TXID: %s", bap.IDKey)
+				t.Logf("BAP Sequence Number: %d", bap.Sequence)
+				assert.NotEmpty(t, bap.IDKey, "TXID should not be empty for ATTEST type")
+				assert.NotEmpty(t, bap.Sequence, "Sequence number should not be empty for ATTEST type")
 
 			case REVOKE:
-				t.Logf("BAP REVOKE TXID: %s", bap.Identity)
-				t.Logf("BAP Sequence Number: %s", bap.SequenceNum)
-				assert.NotEmpty(t, bap.Identity, "TXID should not be empty for REVOKE type")
-				assert.NotEmpty(t, bap.SequenceNum, "Sequence number should not be empty for REVOKE type")
+				t.Logf("BAP REVOKE TXID: %s", bap.IDKey)
+				t.Logf("BAP Sequence Number: %d", bap.Sequence)
+				assert.NotEmpty(t, bap.IDKey, "TXID should not be empty for REVOKE type")
+				assert.NotEmpty(t, bap.Sequence, "Sequence number should not be empty for REVOKE type")
 
 			case ALIAS:
-				t.Logf("BAP ALIAS: %s", bap.Identity)
+				t.Logf("BAP ALIAS: %s", bap.IDKey)
 				t.Logf("BAP Address: %s", bap.Address)
-				assert.NotEmpty(t, bap.Identity, "Alias should not be empty for ALIAS type")
+				assert.NotEmpty(t, bap.IDKey, "Alias should not be empty for ALIAS type")
 				assert.NotEmpty(t, bap.Address, "Address should not be empty for ALIAS type")
 			}
 
@@ -229,7 +230,7 @@ func TestCreateBAP(t *testing.T) {
 
 	// Verify the decoded BAP data
 	assert.Equal(t, ID, bap.Type)
-	assert.Equal(t, identity, bap.Identity)
+	assert.Equal(t, identity, bap.IDKey)
 	assert.Equal(t, address, bap.Address)
 
 	// The decoded BAP should not have AIP signature data
@@ -240,7 +241,7 @@ func TestCreateBAP(t *testing.T) {
 
 	// Test creating an ATTEST message
 	txid := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-	seqNum := "1"
+	seqNum := 1
 
 	// Create a correct ATTEST script
 	attestScript := &script.Script{}
@@ -254,7 +255,7 @@ func TestCreateBAP(t *testing.T) {
 	require.NoError(t, err)
 
 	// Add the sequence number as a separate push
-	err = attestScript.AppendPushData([]byte(seqNum))
+	err = attestScript.AppendPushData([]byte(strconv.Itoa(seqNum)))
 	require.NoError(t, err)
 
 	// Log the created script
@@ -315,6 +316,6 @@ func TestCreateBAP(t *testing.T) {
 
 	// Verify the decoded BAP ATTEST data
 	assert.Equal(t, ATTEST, attestBap.Type)
-	assert.Equal(t, txid, attestBap.Identity)
-	assert.Equal(t, seqNum, attestBap.SequenceNum)
+	assert.Equal(t, txid, attestBap.IDKey)
+	assert.Equal(t, uint64(seqNum), attestBap.Sequence)
 }

@@ -1,7 +1,6 @@
 package bitcom
 
 import (
-	"encoding/base64"
 	"slices"
 	"strconv"
 	"strings"
@@ -18,7 +17,7 @@ const AIPPrefix = "15PciHG22SNLQJXMoSUaWVi7WSqc7hCfva"
 type AIP struct {
 	Algorithm    string `json:"algorithm"`
 	Address      string `json:"address"`
-	Signature    string `json:"signature"`
+	Signature    []byte `json:"signature"`
 	FieldIndexes []int  `json:"fieldIndexes,omitempty"`
 	Valid        bool   `json:"valid,omitempty"`
 }
@@ -63,7 +62,8 @@ func DecodeAIP(b *Bitcom) []*AIP {
 
 			// Read SIGNATURE (third chunk)
 			if len(chunks) > 2 {
-				aip.Signature = base64.StdEncoding.EncodeToString(chunks[2].Data)
+				// aip.Signature = base64.StdEncoding.EncodeToString(chunks[2].Data)
+				aip.Signature = chunks[2].Data
 			} else {
 				continue
 			}
@@ -107,9 +107,10 @@ func validateAip(aip *AIP, protos []*BitcomProtocol) {
 		}
 		data = append(data, '|')
 	}
-	if sig, err := base64.StdEncoding.DecodeString(aip.Signature); err != nil {
-		return
-	} else if err := bsm.VerifyMessage(aip.Address, sig, data); err == nil {
+	// if sig, err := base64.StdEncoding.DecodeString(aip.Signature); err != nil {
+	// 	return
+	// } else if err := bsm.VerifyMessage(aip.Address, sig, data); err == nil {
+	if err := bsm.VerifyMessage(aip.Address, aip.Signature, data); err == nil {
 		aip.Valid = true
 	}
 }

@@ -55,7 +55,7 @@ func TestLock(t *testing.T) {
 				Protocols: []*BitcomProtocol{
 					{
 						Protocol: MapPrefix,
-						Script:   []byte("test data"),
+						Script:   *script.NewFromBytes(append([]byte{9}, "test data"...)),
 					},
 				},
 			},
@@ -75,11 +75,11 @@ func TestLock(t *testing.T) {
 				Protocols: []*BitcomProtocol{
 					{
 						Protocol: MapPrefix,
-						Script:   []byte("map data"),
+						Script:   *script.NewFromBytes(append([]byte{8}, "map data"...)),
 					},
 					{
 						Protocol: BPrefix,
-						Script:   []byte("b data"),
+						Script:   *script.NewFromBytes(append([]byte{6}, "b data"...)),
 					},
 				},
 			},

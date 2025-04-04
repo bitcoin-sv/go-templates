@@ -82,7 +82,7 @@ func TestDecodeAIP(t *testing.T) {
 				{
 					Algorithm: "BITCOIN_ECDSA",
 					Address:   "1address1234567890",
-					Signature: "signature1234567890",
+					Signature: []byte("signature1234567890"),
 				},
 			},
 		},
@@ -110,7 +110,7 @@ func TestDecodeAIP(t *testing.T) {
 				{
 					Algorithm:    "BITCOIN_ECDSA",
 					Address:      "1address1234567890",
-					Signature:    "signature1234567890",
+					Signature:    []byte("signature1234567890"),
 					FieldIndexes: []int{1, 2, 3},
 				},
 			},
@@ -136,7 +136,7 @@ func TestDecodeAIP(t *testing.T) {
 				{
 					Algorithm: "BITCOIN_ECDSA",
 					Address:   "1address1234567890",
-					Signature: "signature1234567890",
+					Signature: []byte("signature1234567890"),
 				},
 			},
 		},
@@ -180,7 +180,7 @@ func TestDecodeAIP(t *testing.T) {
 				{
 					Algorithm:    "BITCOIN_ECDSA",
 					Address:      "1address1234567890",
-					Signature:    "signature1234567890",
+					Signature:    []byte("signature1234567890"),
 					FieldIndexes: []int{},
 				},
 			},
@@ -371,7 +371,7 @@ func TestDecodeAIPBasic(t *testing.T) {
 	require.Equal(t, 1, len(aips), "Should find 1 AIP instance")
 	require.Equal(t, "BITCOIN_ECDSA", aips[0].Algorithm, "AIP should have expected algorithm")
 	require.Equal(t, "1EXhSbGFiEAZCE5eeBvUxT6cBVHhrpPWXz", aips[0].Address, "AIP should have expected address")
-	require.Equal(t, "abcdefghijklmnopqrstuvwxyz0", aips[0].Signature, "AIP should have expected signature")
+	require.Equal(t, []byte("abcdefghijklmnopqrstuvwxyz0"), aips[0].Signature, "AIP should have expected signature")
 }
 
 // TestDecodeAIPNilCases tests handling of nil inputs to the AIP decoder
