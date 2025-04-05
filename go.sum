@@ -1,5 +1,5 @@
-github.com/b-open-io/go-sdk v1.1.22-0.20250329172752-ca68d5bf1bee h1:s3qTUcd2Ki13YloWN6uS4iuxNDJzR5BYBR/IKAUfoao=
-github.com/b-open-io/go-sdk v1.1.22-0.20250329172752-ca68d5bf1bee/go.mod h1:IWyjkqNHCxZejsqT+POnDVU8dNxBQfvFtc8j/tdtsFQ=
+github.com/b-open-io/go-sdk v1.1.22-0.20250402014244-4516d3e3c7a1 h1:g6vZ0B73Dfp/h0jSkWejlm7Fvf+xeyJzrGH5o1Zzq6g=
+github.com/b-open-io/go-sdk v1.1.22-0.20250402014244-4516d3e3c7a1/go.mod h1:IWyjkqNHCxZejsqT+POnDVU8dNxBQfvFtc8j/tdtsFQ=
 github.com/bitcoinschema/go-aip v0.3.3 h1:hTe9xbjVA6yGZgVjXdsdSprq9HEoZYMfNOXJBJlbE3E=
 github.com/bitcoinschema/go-aip v0.3.3/go.mod h1:Dw/AS97LfD8Jq4efsZAFG6gTZAVl3pp5yMDA5UmhhJY=
 github.com/bitcoinschema/go-bob v0.5.2 h1:DKABIT6NCScvkeyGVCdpbxHb0EzcbXzKpvbS1SdPuuo=
