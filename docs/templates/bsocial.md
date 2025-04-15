@@ -2,7 +2,7 @@
 
 ## Overview
 
-The BSocial template provides a standardized way to create social media transactions on the Bitcoin SV blockchain using the Magic Attribute Protocol (MAP) according to [BitcoinSchema.org](https://bitcoinschema.org/) standards. It defines common actions such as posts, replies, likes, follows, and messages.
+The BSocial template provides a standardized way to create social media transactions on the Bitcoin SV blockchain using composable data protocols like "B", Magic Attribute Protocol (MAP), Author Identity Protocol (AIP), and Bitcoin Attestation Protocol (BAP). It defines common actions such as posts, replies, likes, follows, and messages.
 
 BSocial implements the social graph protocols defined by [BitcoinSchema.org](https://bitcoinschema.org/), a community-driven initiative creating extensible schemas that enable developers to build interoperable data applications on Bitcoin.
 
