@@ -1,4 +1,4 @@
-package p2pkh_test
+package p2pkh
 
 import (
 	"testing"
@@ -7,7 +7,6 @@ import (
 	script "github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	sighash "github.com/bsv-blockchain/go-sdk/transaction/sighash"
-	"github.com/bsv-blockchain/go-sdk/transaction/template/p2pkh"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,7 +29,7 @@ func TestLocalUnlocker_UnlockAllInputs(t *testing.T) {
 	priv, err := ec.PrivateKeyFromWif("cNGwGSc7KRrTmdLUZ54fiSXWbhLNDc2Eg5zNucgQxyQCzuQ5YRDq")
 	require.NoError(t, err)
 
-	unlocker, err := p2pkh.Unlock(priv, nil)
+	unlocker, err := Unlock(priv, nil)
 	require.NoError(t, err)
 
 	s, err := unlocker.Sign(tx, 0)
@@ -103,7 +102,7 @@ func TestLocalUnlocker_ValidSignature(t *testing.T) {
 			priv, err := ec.PrivateKeyFromWif("cNGwGSc7KRrTmdLUZ54fiSXWbhLNDc2Eg5zNucgQxyQCzuQ5YRDq")
 			require.NoError(t, err)
 
-			unlocker, err := p2pkh.Unlock(priv, nil)
+			unlocker, err := Unlock(priv, nil)
 			require.NoError(t, err)
 			uscript, err := unlocker.Sign(tx, 0)
 			require.NoError(t, err)
@@ -127,4 +126,38 @@ func TestLocalUnlocker_ValidSignature(t *testing.T) {
 			require.True(t, sig.Verify(sh, publicKey))
 		})
 	}
+}
+
+func TestDecode_ValidAndInvalid(t *testing.T) {
+	// Valid P2PKH script (mainnet)
+	scriptHex := "76a914c0a3c167a28cabb9fbb495affa0761e6e74ac60d88ac"
+	s, err := script.NewFromHex(scriptHex)
+	require.NoError(t, err)
+	addr := Decode(s, true)
+	require.NotNil(t, addr)
+	require.Equal(t, 20, len(addr.PublicKeyHash))
+
+	// Invalid script (not 25 bytes)
+	invalidScript := script.Script([]byte{0x00, 0x01, 0x02})
+	addr = Decode(&invalidScript, true)
+	require.Nil(t, addr)
+}
+
+func TestLock_RoundTrip(t *testing.T) {
+	// Create an address
+	pkh := make([]byte, 20)
+	for i := range pkh {
+		pkh[i] = byte(i)
+	}
+	addr, err := script.NewAddressFromPublicKeyHash(pkh, true)
+	require.NoError(t, err)
+
+	s, err := Lock(addr)
+	require.NoError(t, err)
+	require.NotNil(t, s)
+
+	// Decode the script back to address
+	decoded := Decode(s, true)
+	require.NotNil(t, decoded)
+	require.Equal(t, addr.AddressString, decoded.AddressString)
 }

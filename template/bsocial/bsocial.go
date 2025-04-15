@@ -18,12 +18,24 @@ const (
 
 // Action represents a base BSocial action with common fields
 type Action struct {
-	App             string      `json:"app"`
-	Type            BSocialType `json:"type"`
-	Context         Context     `json:"context,omitempty"`
-	ContextValue    string      `json:"contextValue,omitempty"`
-	Subcontext      Context     `json:"subcontext,omitempty"`
-	SubcontextValue string      `json:"subcontextValue,omitempty"`
+	App             string        `json:"app"`
+	Type            ActionType    `json:"type"`
+	Context         ActionContext `json:"context,omitempty"`
+	ContextValue    string        `json:"contextValue,omitempty"`
+	Subcontext      ActionContext `json:"subcontext,omitempty"`
+	SubcontextValue string        `json:"subcontextValue,omitempty"`
+}
+
+// Ord represents an Ordinal
+// Used to define collection properties on 1Sat Ordinals
+type Ord struct {
+	Action
+}
+
+// Claim represents a claim to something
+// Used to claim OPNS handles, etc.
+type Claim struct {
+	Action
 }
 
 // Post represents a new piece of content
@@ -73,6 +85,8 @@ type BMap struct {
 
 // BSocial represents all potential BSocial actions for a transaction
 type BSocial struct {
+	Ord         *Ord        `json:"ord"`
+	Claim       *Claim      `json:"claim"`
 	Post        *Post       `json:"post"`
 	Reply       *Reply      `json:"reply"`
 	Like        *Like       `json:"like"`
@@ -163,7 +177,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 	}
 
 	// Type-specific handlers mapped to action types
-	handlers := map[BSocialType]func(*bitcom.Map, *BSocial){
+	handlers := map[ActionType]func(*bitcom.Map, *BSocial){
 		TypePostReply: func(m *bitcom.Map, bs *BSocial) {
 			// Check if this is a reply (has a context_tx) or a regular post
 			if _, exists := m.Data["tx"]; exists {
@@ -222,7 +236,7 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 	}
 
 	// Execute the appropriate handler if one exists for this action type
-	if actionType := BSocialType(m.Data["type"]); actionType != "" {
+	if actionType := ActionType(m.Data["type"]); actionType != "" {
 		if handler, exists := handlers[actionType]; exists {
 			handler(m, bsocial)
 		}
@@ -230,12 +244,12 @@ func processMapData(m *bitcom.Map, bsocial *BSocial) {
 }
 
 // createAction builds an Action structure from MAP data
-func createAction(actionType BSocialType, m *bitcom.Map) Action {
+func createAction(actionType ActionType, m *bitcom.Map) Action {
 	action := Action{
 		App:        m.Data["app"],
 		Type:       actionType,
-		Context:    Context(m.Data["context"]),
-		Subcontext: Context(m.Data["subcontext"]),
+		Context:    ActionContext(m.Data["context"]),
+		Subcontext: ActionContext(m.Data["subcontext"]),
 	}
 
 	if context, exists := m.Data["context"]; exists {

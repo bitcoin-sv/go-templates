@@ -200,8 +200,9 @@ const (
 )
 ```
 
-### Context Types
+### Common Context Types
 
+A context can be any string that is meaningful to the action. Here are some common contexts:
 ```go
 // Context defines different contexts in BSocial
 type Context string
@@ -212,6 +213,7 @@ const (
     ContextBapID    Context = "bapID"    // Bitcoin Attestation Protocol ID
     ContextProvider Context = "provider" // Provider context
     ContextVideoID  Context = "videoID"  // Video ID context
+    ContextGeohash  Context = "geohash"  // Geohash context
 )
 ```
 

@@ -389,7 +389,7 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 			case "like":
 				require.NotNil(t, bsocial.Like, ErrMsgDecodeFailure, "like action", vector.Name)
 				if contextType, ok := vector.Expected["context_type"].(string); ok {
-					require.Equal(t, Context(contextType), bsocial.Like.Context, ErrMsgWrongContextType,
+					require.Equal(t, ActionContext(contextType), bsocial.Like.Context, ErrMsgWrongContextType,
 						contextType, bsocial.Like.Context, vector.Name)
 				}
 				if postTx, ok := vector.Expected["post_tx"].(string); ok && postTx != "" {
@@ -399,7 +399,7 @@ func testBSocialFromVectors(t *testing.T, filePath string, actionType string) {
 			case "unlike":
 				require.NotNil(t, bsocial.Unlike, ErrMsgDecodeFailure, "unlike action", vector.Name)
 				if contextType, ok := vector.Expected["context_type"].(string); ok {
-					require.Equal(t, Context(contextType), bsocial.Unlike.Context, ErrMsgWrongContextType,
+					require.Equal(t, ActionContext(contextType), bsocial.Unlike.Context, ErrMsgWrongContextType,
 						contextType, bsocial.Unlike.Context, vector.Name)
 				}
 				if postTx, ok := vector.Expected["post_tx"].(string); ok && postTx != "" {
