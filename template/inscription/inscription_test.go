@@ -29,3 +29,26 @@ func TestLock_Basic(t *testing.T) {
 		t.Error("expected non-empty script")
 	}
 }
+
+func TestRoundTrip_LockDecode(t *testing.T) {
+	insc := &Inscription{
+		File: File{
+			Type:    "text/plain",
+			Content: []byte("round trip test content"),
+		},
+	}
+	script, err := insc.Lock()
+	if err != nil {
+		t.Fatalf("Lock error: %v", err)
+	}
+	decoded := Decode(script)
+	if decoded == nil {
+		t.Fatalf("Decode failed, got nil")
+	}
+	if decoded.File.Type != insc.File.Type {
+		t.Errorf("File.Type mismatch: got %q, want %q", decoded.File.Type, insc.File.Type)
+	}
+	if string(decoded.File.Content) != string(insc.File.Content) {
+		t.Errorf("File.Content mismatch: got %q, want %q", string(decoded.File.Content), string(insc.File.Content))
+	}
+}

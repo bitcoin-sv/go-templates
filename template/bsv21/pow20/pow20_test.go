@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bitcoin-sv/go-templates/template/bsv21"
 	"github.com/bitcoin-sv/go-templates/template/inscription"
+	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
 )
@@ -126,4 +128,101 @@ func TestDecodePOW20FromTestVector(t *testing.T) {
 	} else {
 		t.Log("No POW20 contract structure found - this is only the JSON contract definition")
 	}
+}
+
+func TestDecode_MinimalScript(t *testing.T) {
+	// Minimal script: just a pushdata with recognizable POW20 prefix (simulate)
+	// This is a placeholder; adjust as needed for your actual script format
+	minimal := &script.Script{0x01, 0x02, 0x03}
+	result := Decode(minimal)
+	require.Nil(t, result, "Decode should return nil for non-POW20 script")
+}
+
+func TestLockAndDecode_RoundTrip(t *testing.T) {
+	symbol := "POW20"
+	decimals := uint8(2)
+	bsv21 := &bsv21.Bsv21{
+		Id:       "testid123",
+		Op:       "deploy+mint",
+		Symbol:   &symbol,
+		Decimals: &decimals,
+	}
+	p := &Pow20{
+		Bsv21:      bsv21,
+		MaxSupply:  1000,
+		Reward:     10,
+		Difficulty: 2,
+	}
+	script := p.Lock(1000)
+	require.NotNil(t, script)
+	t.Logf("Script bytes: %x", []byte(*script))
+	decoded := Decode(script)
+	t.Logf("Decoded struct: %+v", decoded)
+	require.NotNil(t, decoded)
+	require.Equal(t, p.MaxSupply, decoded.MaxSupply)
+	require.Equal(t, p.Difficulty, decoded.Difficulty)
+	if decoded.Bsv21 != nil && decoded.Bsv21.Symbol != nil {
+		require.Equal(t, symbol, *decoded.Bsv21.Symbol)
+	}
+	if decoded.Bsv21 != nil && decoded.Bsv21.Decimals != nil {
+		require.Equal(t, decimals, *decoded.Bsv21.Decimals)
+	}
+}
+
+func TestBuildUnlockTx_Basic(t *testing.T) {
+	symbol := "POW20"
+	decimals := uint8(2)
+	bsv21 := &bsv21.Bsv21{
+		Id:       "testid123",
+		Op:       "deploy+mint",
+		Symbol:   &symbol,
+		Decimals: &decimals,
+	}
+	p := &Pow20{
+		Bsv21:      bsv21,
+		MaxSupply:  1000,
+		Reward:     10,
+		Difficulty: 2,
+		Supply:     100,
+		Txid:       make([]byte, 32),
+		Vout:       0,
+	}
+	changeAddr := &script.Address{PublicKeyHash: make([]byte, 20)}
+	recipient := &script.Address{PublicKeyHash: make([]byte, 20)}
+	tx, err := p.BuildUnlockTx([]byte{1, 2, 3}, recipient, changeAddr)
+	require.NoError(t, err)
+	require.NotNil(t, tx)
+	require.GreaterOrEqual(t, len(tx.Outputs), 2)
+}
+
+func TestUnlock_Basic(t *testing.T) {
+	p := &Pow20{}
+	recipient := &script.Address{PublicKeyHash: make([]byte, 20)}
+	unlock, err := p.Unlock([]byte{1, 2, 3}, recipient)
+	require.NoError(t, err)
+	require.NotNil(t, unlock)
+	require.Equal(t, recipient, unlock.Recipient)
+}
+
+func TestSign_Basic(t *testing.T) {
+	p := &Pow20{}
+	recipient := &script.Address{PublicKeyHash: make([]byte, 20)}
+	unlock, _ := p.Unlock([]byte{1, 2, 3}, recipient)
+	tx := transaction.NewTransaction()
+	// Add a dummy input and output for preimage calculation
+	tx.AddInput(&transaction.TransactionInput{})
+	tx.AddOutput(&transaction.TransactionOutput{Satoshis: 1, LockingScript: &script.Script{}})
+	_, err := unlock.Sign(tx, 0)
+	// We expect an error because preimage calculation will fail, but the code path is exercised
+	require.Error(t, err)
+}
+
+func TestEstimateLength_Basic(t *testing.T) {
+	p := &Pow20{}
+	recipient := &script.Address{PublicKeyHash: make([]byte, 20)}
+	unlock, _ := p.Unlock([]byte{1, 2, 3}, recipient)
+	tx := transaction.NewTransaction()
+	tx.AddInput(&transaction.TransactionInput{})
+	length := unlock.EstimateLength(tx, 0)
+	require.Greater(t, length, uint32(0))
 }

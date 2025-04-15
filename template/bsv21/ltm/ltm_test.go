@@ -278,3 +278,100 @@ func TestCreateLTMTransaction(t *testing.T) {
 	require.Equal(t, "deploy", decodedJson["op"], "Operation should be deploy")
 	require.Equal(t, "SILVER", decodedJson["sym"], "Symbol should be SILVER")
 }
+
+func TestDecode_MissingPrefix(t *testing.T) {
+	s := &script.Script{0x01, 0x02, 0x03}
+	result := Decode(s)
+	require.Nil(t, result, "Decode should return nil if prefix is missing")
+}
+
+func TestDecode_MissingSuffix(t *testing.T) {
+	origPrefix := ltmPrefix
+	fakePrefix := script.NewFromBytes([]byte("LTM_PREFIX"))
+	ltmPrefix = fakePrefix
+	defer func() { ltmPrefix = origPrefix }()
+
+	fakeScript := append([]byte("LTM_PREFIX"), 0x01, 0x02, 0x03)
+	s := script.NewFromBytes(fakeScript)
+	result := Decode(s)
+	require.Nil(t, result, "Decode should return nil if suffix is missing")
+}
+
+func TestDecode_MalformedChunks(t *testing.T) {
+	origPrefix := ltmPrefix
+	origSuffix := ltmSuffix
+	fakePrefix := script.NewFromBytes([]byte("LTM_PREFIX"))
+	fakeSuffix := script.NewFromBytes([]byte("LTM_SUFFIX"))
+	ltmPrefix = fakePrefix
+	ltmSuffix = fakeSuffix
+	defer func() { ltmPrefix = origPrefix; ltmSuffix = origSuffix }()
+
+	scriptBytes := append([]byte("LTM_PREFIX"), []byte("LTM_SUFFIX")...)
+	s := script.NewFromBytes(scriptBytes)
+	result := Decode(s)
+	require.Nil(t, result, "Decode should return nil if chunks are missing")
+}
+
+func TestDecode_DecimalsEdgeCases(t *testing.T) {
+	origPrefix := ltmPrefix
+	origSuffix := ltmSuffix
+	fakePrefix := script.NewFromBytes([]byte("LTM_PREFIX"))
+	fakeSuffix := script.NewFromBytes([]byte("LTM_SUFFIX"))
+	ltmPrefix = fakePrefix
+	ltmSuffix = fakeSuffix
+	defer func() { ltmPrefix = origPrefix; ltmSuffix = origSuffix }()
+
+	// Symbol, Max, Decimals (as opcode), Multiplier, LockDuration, StartHeight
+	chunks := [][]byte{
+		[]byte("SYM"),
+		{0x01}, // Max
+		{},     // Decimals as opcode (simulate Op2)
+		{0x02}, // Multiplier
+		{0x03}, // LockDuration
+		{0x04}, // StartHeight
+	}
+	scriptBytes := append([]byte("LTM_PREFIX"))
+	for i, chunk := range chunks {
+		if i == 2 {
+			scriptBytes = append(scriptBytes, 0x52) // Op2
+		} else {
+			scriptBytes = append(scriptBytes, byte(len(chunk)))
+			scriptBytes = append(scriptBytes, chunk...)
+		}
+	}
+	scriptBytes = append(scriptBytes, []byte("LTM_SUFFIX")...)
+	s := script.NewFromBytes(scriptBytes)
+	result := Decode(s)
+	require.NotNil(t, result, "Decode should succeed with opcode decimals")
+	require.Equal(t, uint8(2), result.Decimals)
+}
+
+func TestDecode_DecimalsAsData(t *testing.T) {
+	origPrefix := ltmPrefix
+	origSuffix := ltmSuffix
+	fakePrefix := script.NewFromBytes([]byte("LTM_PREFIX"))
+	fakeSuffix := script.NewFromBytes([]byte("LTM_SUFFIX"))
+	ltmPrefix = fakePrefix
+	ltmSuffix = fakeSuffix
+	defer func() { ltmPrefix = origPrefix; ltmSuffix = origSuffix }()
+
+	// Symbol, Max, Decimals (as data), Multiplier, LockDuration, StartHeight
+	chunks := [][]byte{
+		[]byte("SYM"),
+		{0x01}, // Max
+		{0x03}, // Decimals as data
+		{0x02}, // Multiplier
+		{0x03}, // LockDuration
+		{0x04}, // StartHeight
+	}
+	scriptBytes := append([]byte("LTM_PREFIX"))
+	for _, chunk := range chunks {
+		scriptBytes = append(scriptBytes, byte(len(chunk)))
+		scriptBytes = append(scriptBytes, chunk...)
+	}
+	scriptBytes = append(scriptBytes, []byte("LTM_SUFFIX")...)
+	s := script.NewFromBytes(scriptBytes)
+	result := Decode(s)
+	require.NotNil(t, result, "Decode should succeed with data decimals")
+	require.Equal(t, uint8(3), result.Decimals)
+}
