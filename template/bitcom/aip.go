@@ -3,7 +3,6 @@ package bitcom
 import (
 	"slices"
 	"strconv"
-	"strings"
 	"unicode"
 
 	bsm "github.com/bsv-blockchain/go-sdk/compat/bsm"
@@ -98,7 +97,7 @@ func validateAip(aip *AIP, protos []*BitcomProtocol) {
 		} else {
 			for _, op := range tape {
 				if (op.Op > 0 || op.Op <= 0x4e) && (aip.FieldIndexes == nil || slices.Contains(aip.FieldIndexes, idx)) {
-					data = append(data, strings.TrimSpace(string(op.Data))...)
+					data = append(data, string(op.Data)...)
 				} else if op.Op > 0x43 && unicode.IsPrint(rune(op.Op)) {
 					data = append(data, op.Op)
 				}

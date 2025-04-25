@@ -1,6 +1,9 @@
 package ordp2pkh
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bitcoin-sv/go-templates/template/bitcom"
@@ -8,6 +11,7 @@ import (
 	"github.com/bitcoin-sv/go-templates/template/p2pkh"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 	"github.com/stretchr/testify/require"
 )
 
@@ -424,4 +428,195 @@ func TestLockWithAddress(t *testing.T) {
 		}
 	}
 	require.True(t, foundMAP, "MAP protocol not found in decoded protocols")
+}
+
+// TestDecodeRealOrdinalTransaction verifies that the OrdP2PKH can properly decode
+// a real-world ordinal transaction
+func TestDecodeRealOrdinalTransaction(t *testing.T) {
+	// Transaction ID from the filename
+	txID := "b08538c963d2b88c7d26600a1c3c925a3388e942cdc5f903ecf0009f18c41ff3"
+	testdataFile := filepath.Join("testdata", txID+".hex")
+
+	// Load the hex data from the file
+	hexBytes, err := os.ReadFile(testdataFile)
+	require.NoError(t, err, "Failed to read test vector file")
+
+	// Create a transaction from the bytes
+	tx, err := transaction.NewTransactionFromHex(strings.TrimSpace(string(hexBytes)))
+	require.NoError(t, err, "Failed to parse transaction")
+
+	// Verify transaction ID matches expected
+	require.Equal(t, txID, tx.TxID().String(), "Transaction ID should match expected value")
+
+	// Log transaction structure
+	t.Logf("Transaction ID: %s", tx.TxID().String())
+	t.Logf("Transaction has %d inputs and %d outputs", len(tx.Inputs), len(tx.Outputs))
+
+	// Log satoshis for each output
+	for i, output := range tx.Outputs {
+		t.Logf("Output %d: %d satoshis", i, output.Satoshis)
+	}
+
+	// Try to find an output with an ordinal inscription
+	var foundOrdP2PKH *OrdP2PKH
+	var outputIndex int
+
+	for i, output := range tx.Outputs {
+		if output.LockingScript == nil || len(*output.LockingScript) == 0 {
+			continue
+		}
+
+		decoded := Decode(output.LockingScript)
+		if decoded != nil {
+			foundOrdP2PKH = decoded
+			outputIndex = i
+			break
+		}
+	}
+
+	// With our improved getAddressFromScript function, we should now find the OrdP2PKH
+	require.NotNil(t, foundOrdP2PKH, "Should find an OrdP2PKH in output 0 with improved implementation")
+	require.Equal(t, 0, outputIndex, "OrdP2PKH should be found in output 0")
+
+	t.Logf("Found OrdP2PKH in output %d", outputIndex)
+
+	// Log detailed info about the found ordinal
+	t.Logf("Inscription Content Type: %s", foundOrdP2PKH.Inscription.File.Type)
+	t.Logf("Inscription Content Size: %d bytes", len(foundOrdP2PKH.Inscription.File.Content))
+
+	// Log address info if available
+	require.NotNil(t, foundOrdP2PKH.Address, "Address should not be nil")
+	t.Logf("P2PKH Address: %s", foundOrdP2PKH.Address.AddressString)
+
+	// Verify the address is the expected one
+	expectedAddress := "1Cr5gSHf5tzFBvGuSa21VRoV9pRuRBmum9"
+	require.Equal(t, expectedAddress, foundOrdP2PKH.Address.AddressString, "Address should match expected value")
+
+	// Log metadata if available
+	if foundOrdP2PKH.Metadata != nil {
+		t.Logf("MAP Metadata found with %d fields", len(foundOrdP2PKH.Metadata.Data))
+		for key, value := range foundOrdP2PKH.Metadata.Data {
+			t.Logf("  %s: %s", key, value)
+		}
+	}
+}
+
+// TestRobustP2PKHExtraction demonstrates the issue with the current implementation
+// and proposes a fix for parsing OrdP2PKH from scripts that contain additional data
+// after the P2PKH part
+func TestRobustP2PKHExtraction(t *testing.T) {
+	// Transaction ID from the filename
+	txID := "b08538c963d2b88c7d26600a1c3c925a3388e942cdc5f903ecf0009f18c41ff3"
+	testdataFile := filepath.Join("testdata", txID+".hex")
+
+	// Load the hex data from the file
+	hexBytes, err := os.ReadFile(testdataFile)
+	require.NoError(t, err, "Failed to read test vector file")
+
+	// Create a transaction from the bytes
+	tx, err := transaction.NewTransactionFromHex(strings.TrimSpace(string(hexBytes)))
+	require.NoError(t, err, "Failed to parse transaction")
+
+	// Directly examine output 0 which contains the ordinal
+	require.GreaterOrEqual(t, len(tx.Outputs), 1, "Transaction should have at least one output")
+	output0 := tx.Outputs[0]
+	require.NotNil(t, output0.LockingScript, "Output 0 should have a locking script")
+
+	// Try to decode the inscription
+	inscr := inscription.Decode(output0.LockingScript)
+	require.NotNil(t, inscr, "Should be able to decode inscription in output 0")
+
+	t.Logf("Found inscription in output 0:")
+	t.Logf("  Content Type: %s", inscr.File.Type)
+	t.Logf("  Content Size: %d bytes", len(inscr.File.Content))
+	t.Logf("  Suffix Script: %d bytes", len(inscr.ScriptSuffix))
+
+	// Standard getAddressFromScript function check
+	standardAddr := getAddressFromScript(inscr)
+	if standardAddr != nil {
+		t.Logf("Standard getAddressFromScript found address: %s", standardAddr.AddressString)
+	} else {
+		t.Logf("Standard getAddressFromScript did not find an address")
+	}
+
+	// More robust implementation to handle scripts with additional data after P2PKH
+	robustAddr := getAddressFromScriptRobust(inscr)
+	require.NotNil(t, robustAddr, "Robust implementation should find a P2PKH address")
+	t.Logf("Robust implementation found address: %s", robustAddr.AddressString)
+
+	// Create a manual OrdP2PKH with the address found
+	robustOrdP2PKH := &OrdP2PKH{
+		Inscription: inscr,
+		Address:     robustAddr,
+	}
+
+	// Test that our custom OrdP2PKH with the robust function works
+	t.Logf("Created OrdP2PKH with address: %s", robustOrdP2PKH.Address.AddressString)
+	t.Logf("Content Type: %s", robustOrdP2PKH.Inscription.File.Type)
+}
+
+// getAddressFromScriptRobust is a more robust version of getAddressFromScript that can
+// extract a P2PKH address even when the script contains additional data after the P2PKH part
+func getAddressFromScriptRobust(inscription *inscription.Inscription) *script.Address {
+	// First try the standard method
+	if addr := getAddressFromScript(inscription); addr != nil {
+		return addr
+	}
+
+	// Check suffix for embedded P2PKH
+	if len(inscription.ScriptSuffix) >= 25 {
+		suffix := script.NewFromBytes(inscription.ScriptSuffix)
+		chunks, err := suffix.Chunks()
+		if err != nil {
+			return nil
+		}
+
+		// Look for P2PKH pattern (OP_DUP OP_HASH160 <pubkeyhash> OP_EQUALVERIFY OP_CHECKSIG)
+		// at the beginning of the script
+		if len(chunks) >= 5 &&
+			chunks[0].Op == script.OpDUP &&
+			chunks[1].Op == script.OpHASH160 &&
+			len(chunks[2].Data) == 20 &&
+			chunks[3].Op == script.OpEQUALVERIFY &&
+			chunks[4].Op == script.OpCHECKSIG {
+
+			// Extract just the P2PKH part
+			p2pkhPart := &script.Script{}
+			_ = p2pkhPart.AppendOpcodes(script.OpDUP, script.OpHASH160)
+			_ = p2pkhPart.AppendPushData(chunks[2].Data)
+			_ = p2pkhPart.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIG)
+
+			// Check if this is a valid P2PKH script
+			return p2pkh.Decode(p2pkhPart, true)
+		}
+	}
+
+	// Check prefix as well for completeness
+	if len(inscription.ScriptPrefix) >= 25 {
+		prefix := script.NewFromBytes(inscription.ScriptPrefix)
+		chunks, err := prefix.Chunks()
+		if err != nil {
+			return nil
+		}
+
+		// Look for P2PKH pattern at the beginning of the script
+		if len(chunks) >= 5 &&
+			chunks[0].Op == script.OpDUP &&
+			chunks[1].Op == script.OpHASH160 &&
+			len(chunks[2].Data) == 20 &&
+			chunks[3].Op == script.OpEQUALVERIFY &&
+			chunks[4].Op == script.OpCHECKSIG {
+
+			// Extract just the P2PKH part
+			p2pkhPart := &script.Script{}
+			_ = p2pkhPart.AppendOpcodes(script.OpDUP, script.OpHASH160)
+			_ = p2pkhPart.AppendPushData(chunks[2].Data)
+			_ = p2pkhPart.AppendOpcodes(script.OpEQUALVERIFY, script.OpCHECKSIG)
+
+			// Check if this is a valid P2PKH script
+			return p2pkh.Decode(p2pkhPart, true)
+		}
+	}
+
+	return nil
 }

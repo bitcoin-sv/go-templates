@@ -89,6 +89,54 @@ func getAddressFromScript(inscription *inscription.Inscription) *script.Address 
 		if address := p2pkh.Decode(suffix, true); address != nil {
 			return address
 		}
+
+		// If direct decode failed, check if a P2PKH script is at the beginning of a larger suffix script
+		if addr := extractP2PKHFromScript(suffix); addr != nil {
+			return addr
+		}
+	}
+
+	// Finally check prefix with extraction method as well
+	if len(inscription.ScriptPrefix) > 0 {
+		prefix := script.NewFromBytes(inscription.ScriptPrefix)
+		if addr := extractP2PKHFromScript(prefix); addr != nil {
+			return addr
+		}
+	}
+
+	return nil
+}
+
+// extractP2PKHFromScript attempts to extract a P2PKH address from a script
+// that might have additional data after the P2PKH part
+func extractP2PKHFromScript(s *script.Script) *script.Address {
+	chunks, err := s.Chunks()
+	if err != nil || len(chunks) < 5 {
+		return nil
+	}
+
+	// Check for P2PKH pattern: OP_DUP OP_HASH160 <pubkeyhash> OP_EQUALVERIFY OP_CHECKSIG
+	if chunks[0].Op == script.OpDUP &&
+		chunks[1].Op == script.OpHASH160 &&
+		len(chunks[2].Data) == 20 &&
+		chunks[3].Op == script.OpEQUALVERIFY &&
+		chunks[4].Op == script.OpCHECKSIG {
+
+		// Create a standard P2PKH script with just the core components
+		p2pkhScript := script.NewFromBytes([]byte{
+			script.OpDUP,
+			script.OpHASH160,
+			script.OpDATA20,
+		})
+
+		// Append the pubkey hash (20 bytes)
+		*p2pkhScript = append(*p2pkhScript, chunks[2].Data...)
+
+		// Append the final opcodes
+		*p2pkhScript = append(*p2pkhScript, script.OpEQUALVERIFY, script.OpCHECKSIG)
+
+		// Use the standard p2pkh.Decode with the cleaned script
+		return p2pkh.Decode(p2pkhScript, true)
 	}
 
 	return nil
