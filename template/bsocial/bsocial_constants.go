@@ -1,27 +1,32 @@
 package bsocial
 
-// BSocialType defines different action types in BSocial
-type BSocialType string
+// ActionType defines different action types in BSocial
+type ActionType string
 
 const (
 	// Action types
-	TypePostReply BSocialType = "post" // Used for both posts and replies
-	TypeLike      BSocialType = "like"
-	TypeUnlike    BSocialType = "unlike"
-	TypeFollow    BSocialType = "follow"
-	TypeUnfollow  BSocialType = "unfollow"
-	TypeMessage   BSocialType = "message"
+	TypePostReply ActionType = "post" // Used for both posts and replies
+	TypeLike      ActionType = "like"
+	TypeUnlike    ActionType = "unlike"
+	TypeFollow    ActionType = "follow"
+	TypeUnfollow  ActionType = "unfollow"
+	TypeMessage   ActionType = "message"
 )
 
-// Context defines different contexts in BSocial
-type Context string
+// ActionContext defines different contexts in BSocial
+type ActionContext string
 
 const (
-	ContextTx       Context = "tx"
-	ContextChannel  Context = "channel"
-	ContextBapID    Context = "bapID"
-	ContextProvider Context = "provider"
-	ContextVideoID  Context = "videoID"
+	// used for replies
+	ContextTx ActionContext = "tx"
+	// used for posts, messages, etc.
+	ContextChannel  ActionContext = "channel"
+	ContextBapID    ActionContext = "bapID"
+	ContextProvider ActionContext = "provider"
+	ContextVideoID  ActionContext = "videoID"
+	ContextGeohash  ActionContext = "geohash"
+	ContextBtcTx    ActionContext = "btcTx"
+	ContextEthTx    ActionContext = "ethTx"
 )
 
 // IsEmpty checks if a BSocial object is empty (has no content)

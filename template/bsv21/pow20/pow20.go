@@ -114,9 +114,6 @@ func Decode(s *script.Script) *Pow20 {
 
 	if op, err = s.ReadOp(&pos); err != nil {
 		return nil
-	}
-	if op, err = s.ReadOp(&pos); err != nil {
-		return nil
 	} else if number, err := interpreter.MakeScriptNumber(op.Data, len(op.Data), true, true); err != nil {
 		return nil
 	} else {
