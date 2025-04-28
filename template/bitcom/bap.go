@@ -1,6 +1,7 @@
 package bitcom
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -33,7 +34,7 @@ type Bap struct {
 	Signature    string          `json:"signature,omitempty"`    // AIP signature
 	RootAddress  string          `json:"root_address,omitempty"` // For ID
 	IsSignedByID bool            `json:"is_signed_by_id"`        // Whether it's signed by the ID
-	Profile      string          `json:"profile,omitempty"`      // Profile for ID
+	Profile      json.RawMessage `json:"profile,omitempty"`      // Profile for ID
 }
 
 // DecodeBAP decodes a BAP protocol message from a Bitcom structure
@@ -203,7 +204,7 @@ func DecodeBAP(b *Bitcom) *Bap {
 				// ALIAS structure: ALIAS <alias> <address>
 				if len(chunks) >= 3 {
 					bap.IDKey = string(chunks[1].Data) // Alias
-					bap.Profile = string(chunks[2].Data)
+					bap.Profile = chunks[2].Data
 
 					// Look for AIP signature data
 					pipeIdx := -1
