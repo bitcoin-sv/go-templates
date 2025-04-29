@@ -14,6 +14,7 @@ const AIPPrefix = "15PciHG22SNLQJXMoSUaWVi7WSqc7hCfva"
 
 // AIP represents an AIP
 type AIP struct {
+	BitcomIndex  uint   `json:"ii,omitempty"` // Index of the AIP in the Bitcom transaction
 	Algorithm    string `json:"algorithm"`
 	Address      string `json:"address"`
 	Signature    []byte `json:"signature"`
@@ -43,7 +44,9 @@ func DecodeAIP(b *Bitcom) []*AIP {
 				continue
 			}
 
-			aip := &AIP{}
+			aip := &AIP{
+				BitcomIndex: uint(protoIdx),
+			}
 
 			// Read ALGORITHM (first chunk)
 			if len(chunks) > 0 {

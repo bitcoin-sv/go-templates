@@ -25,6 +25,7 @@ const (
 
 // Bap represents a Bitcoin Attestation Protocol data structure
 type Bap struct {
+	BitcomIndex  uint            `json:"ii,omitempty"` // Index of the AIP in the Bitcom transaction
 	Type         AttestationType `json:"type"`
 	IDKey        string          `json:"id_key,omitempty"`  // ID: Identity key, ATTEST: URN Hash
 	Address      string          `json:"address,omitempty"` // Address value
@@ -45,11 +46,13 @@ func DecodeBAP(b *Bitcom) *Bap {
 	}
 
 	// Look for the BAP protocol data
-	for _, proto := range b.Protocols {
+	for ii, proto := range b.Protocols {
 		// Check if this is a BAP protocol entry
 		if proto.Protocol == BAPPrefix {
 			// Create a BAP struct to hold the decoded data
-			bap := &Bap{}
+			bap := &Bap{
+				BitcomIndex: uint(ii),
+			}
 
 			// Parse script into chunks for analysis
 			scr := script.NewFromBytes(proto.Script)
