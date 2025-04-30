@@ -1,9 +1,5 @@
 github.com/b-open-io/go-sdk v1.1.22-0.20250406003733-6a6b9ac5b847 h1:wf6mbH1/Sqs4X02n6QpSrgKeeM44VQhdvbJvYg+JiOQ=
 github.com/b-open-io/go-sdk v1.1.22-0.20250406003733-6a6b9ac5b847/go.mod h1:IWyjkqNHCxZejsqT+POnDVU8dNxBQfvFtc8j/tdtsFQ=
-github.com/bitcoinschema/go-aip v0.3.3 h1:hTe9xbjVA6yGZgVjXdsdSprq9HEoZYMfNOXJBJlbE3E=
-github.com/bitcoinschema/go-aip v0.3.3/go.mod h1:Dw/AS97LfD8Jq4efsZAFG6gTZAVl3pp5yMDA5UmhhJY=
-github.com/bitcoinschema/go-bob v0.5.2 h1:DKABIT6NCScvkeyGVCdpbxHb0EzcbXzKpvbS1SdPuuo=
-github.com/bitcoinschema/go-bob v0.5.2/go.mod h1:wiDgN//GF1u9OwA1TrxHZZuE9wDKtkW8T8xGf5RRFY0=
 github.com/bitcoinschema/go-bpu v0.2.2 h1:F/eIC8XhzwgptpA1+rgYQo8bzT51nVozdXpASsxPIno=
 github.com/bitcoinschema/go-bpu v0.2.2/go.mod h1:zppAI/4uAi+lSKBAc7QtWp98d+iczCB6CnGrGV75fAQ=
 github.com/bitcoinschema/go-sigma v0.1.2 h1:tFNlZZ8QnSokHlWL/39+NCzC1x2lTO3uOJhcvBkC1TE=

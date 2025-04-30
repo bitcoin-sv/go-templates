@@ -1,11 +1,12 @@
 package bsocial
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/bitcoin-sv/go-templates/template/bitcom"
 	"github.com/bitcoin-sv/go-templates/template/p2pkh"
-	"github.com/bitcoinschema/go-aip"
+	bsm "github.com/bsv-blockchain/go-sdk/compat/bsm"
 	ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -114,7 +115,6 @@ func DecodeTransaction(tx *transaction.Transaction) (bsocial *BSocial) {
 	}
 	var trimAttachments bool
 	if bsocial.Post != nil && len(bsocial.Attachments) > 0 {
-
 		bsocial.Post.B = bsocial.Attachments[0]
 		trimAttachments = true
 	}
@@ -305,11 +305,11 @@ func CreatePost(post Post, attachments []bitcom.B, tags []string, identityKey *e
 		data := s.String()
 		_ = s.AppendPushDataString(bitcom.AIPPrefix)
 		_ = s.AppendPushDataString("BITCOIN_ECDSA")
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushDataString(sig.Signature)
+		_ = s.AppendPushDataString(sig)
 		// pubKey := identityKey.PubKey()
 		// mapScript.AppendPushData(pubKey.Compressed())
 	}
@@ -381,11 +381,11 @@ func CreateReply(reply Reply, replyTxID string, utxos []*transaction.UTXO, chang
 
 		// make a string from the mapScript
 		data := s.String()
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushDataString(sig.Signature)
+		_ = s.AppendPushDataString(sig)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -432,11 +432,11 @@ func CreateLike(likeTxID string, utxos []*transaction.UTXO, changeAddress *scrip
 
 		// make a string from the script
 		data := s.String()
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushDataString(sig.Signature)
+		_ = s.AppendPushDataString(sig)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -483,11 +483,11 @@ func CreateUnlike(unlikeTxID string, utxos []*transaction.UTXO, changeAddress *s
 
 		// make a string from the script
 		data := s.String()
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushDataString(sig.Signature)
+		_ = s.AppendPushDataString(sig)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -534,11 +534,11 @@ func CreateFollow(followBapID string, utxos []*transaction.UTXO, changeAddress *
 
 		// make a string from the script
 		data := s.String()
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushDataString(sig.Signature)
+		_ = s.AppendPushDataString(sig)
 	}
 
 	// Add action output
@@ -586,11 +586,11 @@ func CreateUnfollow(unfollowBapID string, utxos []*transaction.UTXO, changeAddre
 
 		// make a string from the script
 		data := s.String()
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.AppendPushDataString(sig.Signature)
+		_ = s.AppendPushDataString(sig)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -659,11 +659,11 @@ func CreateMessage(message Message, utxos []*transaction.UTXO, changeAddress *sc
 
 		// make a string from the mapScript
 		data := mapScript.String()
-		sig, err := aip.Sign(identityKey, aip.BitcoinECDSA, data)
+		sig, err := SignAIP(identityKey, data)
 		if err != nil {
 			return nil, err
 		}
-		_ = mapScript.AppendPushDataString(sig.Signature)
+		_ = mapScript.AppendPushDataString(sig)
 	}
 
 	tx.AddOutput(&transaction.TransactionOutput{
@@ -712,4 +712,24 @@ func processTags(bsocial *BSocial, tagsField any) {
 			bsocial.Tags = append(bsocial.Tags, parsedTags)
 		}
 	}
+}
+
+type Algorithm string
+
+const (
+	BitcoinECDSA         Algorithm = "BITCOIN_ECDSA"        // Backwards compatible for BitcoinSignedMessage
+	BitcoinSignedMessage Algorithm = "BitcoinSignedMessage" // New algo name
+	Paymail              Algorithm = "paymail"              // Using "pubkey" as aip.Address
+)
+
+// Sign will provide an AIP signature for a given private key and message using
+// the provided algorithm. It prepends an OP_RETURN to the payload
+func SignAIP(privateKey *ec.PrivateKey, message string) (b64Sig string, err error) {
+	// Sign using the private key and the message
+	var sig []byte
+	if sig, err = bsm.SignMessage(privateKey, append([]byte{script.OpRETURN}, message...)); err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(sig), nil
 }

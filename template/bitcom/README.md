@@ -73,14 +73,13 @@ The Author Identity Protocol (AIP) allows signing data with an identity.
 ```go
 import (
     "github.com/bitcoin-sv/go-templates/template/bitcom"
-    "github.com/bitcoinschema/go-aip"
     ec "github.com/bsv-blockchain/go-sdk/primitives/ec"
 )
 
 // Sign data with AIP
 privKey, _ := ec.NewPrivateKey()
 data := "Data to sign"
-sig, err := aip.Sign(privKey, aip.BitcoinECDSA, data)
+sig, err := bsocial.SignAIP(privKey,  data)
 if err != nil {
     // Handle error
 }

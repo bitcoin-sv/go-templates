@@ -3,7 +3,6 @@ module github.com/bitcoin-sv/go-templates
 go 1.24.1
 
 require (
-	github.com/bitcoinschema/go-aip v0.3.3
 	github.com/bitcoinschema/go-sigma v0.1.2
 	github.com/bsv-blockchain/go-sdk v1.1.22
 	github.com/stretchr/testify v1.10.0
