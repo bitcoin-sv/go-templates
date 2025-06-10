@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"unicode/utf8"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 type File struct {
@@ -17,10 +17,10 @@ type File struct {
 }
 
 type Inscription struct {
-	File         File              `json:"file,omitempty"`
-	Parent       *overlay.Outpoint `json:"parent,omitempty"`
-	ScriptPrefix []byte            `json:"prefix,omitempty"`
-	ScriptSuffix []byte            `json:"suffix,omitempty"`
+	File         File                  `json:"file,omitempty"`
+	Parent       *transaction.Outpoint `json:"parent,omitempty"`
+	ScriptPrefix []byte                `json:"prefix,omitempty"`
+	ScriptSuffix []byte                `json:"suffix,omitempty"`
 }
 
 func Decode(scr *script.Script) *Inscription {
@@ -62,7 +62,7 @@ func Decode(scr *script.Script) *Inscription {
 					}
 				case 3:
 					if len(op2.Data) == 36 {
-						insc.Parent = overlay.NewOutpointFromBytes([36]byte(op2.Data))
+						insc.Parent = transaction.NewOutpointFromBytes([36]byte(op2.Data))
 					}
 				}
 

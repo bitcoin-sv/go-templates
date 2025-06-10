@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/bitcoin-sv/go-templates/template/inscription"
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
 )
 
@@ -74,8 +73,6 @@ func Decode(scr *script.Script) *Bsv21 {
 			}
 		case string(OpTransfer), string(OpBurn):
 			if id, ok := data["id"]; !ok {
-				return nil
-			} else if _, err = overlay.NewOutpointFromString(id); err != nil {
 				return nil
 			} else {
 				bsv21.Id = id

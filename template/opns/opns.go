@@ -6,7 +6,6 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	hash "github.com/bsv-blockchain/go-sdk/primitives/hash"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/transaction"
@@ -16,8 +15,17 @@ import (
 
 const DIFFICULTY = 22
 
-var GENESIS, _ = overlay.NewOutpointFromString("58b7558ea379f24266c7e2f5fe321992ad9a724fd7a87423ba412677179ccb25_0")
+var txStr = "58b7558ea379f24266c7e2f5fe321992ad9a724fd7a87423ba412677179ccb25_0"
+var GENESIS *transaction.Outpoint
 var comp = big.NewInt(0)
+
+func init() {
+	var err error
+	GENESIS, err = transaction.OutpointFromString(txStr)
+	if err != nil {
+		panic("Failed to parse genesis outpoint: " + err.Error())
+	}
+}
 
 // type OpNS struct {
 // 	Claimed []byte `json:"claimed,omitempty"`

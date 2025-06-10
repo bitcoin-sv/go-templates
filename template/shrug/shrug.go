@@ -3,15 +3,15 @@ package shrug
 import (
 	"math/big"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
 	"github.com/bsv-blockchain/go-sdk/script/interpreter"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 const SHRUG_TAG = "¯\\_(ツ)_/¯"
 
 type Shrug struct {
-	Id           *overlay.Outpoint
+	Id           *transaction.Outpoint
 	Amount       *big.Int
 	ScriptSuffix []byte
 }
@@ -26,7 +26,7 @@ func Decode(s *script.Script) *Shrug {
 	} else if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	} else if len(op.Data) == 36 {
-		shrug.Id = overlay.NewOutpointFromBytes([36]byte(op.Data))
+		shrug.Id = transaction.NewOutpointFromBytes([36]byte(op.Data))
 	} else if op, err = s.ReadOp(&pos); err != nil {
 		return nil
 	} else if op.Op != script.Op2DROP {
