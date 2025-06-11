@@ -8,44 +8,55 @@ A collection of script templates for use with the official BSV Golang SDK
 
 The goal of this repository is to provide a place where developers from around the ecosystem can publish all manner of script templates, without needing to update the core library. We're generally neutral and unbiased about what people contribute, so feel free to contribute and see what people do with your cool idea!
 
-## Using
+## Available Templates
 
-You can write code like this:
+| Template | Description | 
+|----------|-------------|
+| [BitCom](./template/bitcom/) | BitCom protocol utilities (B, MAP, AIP) for structured data |
+| [BSocial](./template/bsocial/) | Social media actions using BitcoinSchema.org standards |
+| [BSV20](./template/bsv20/) | BSV20 token standard implementation |
+| [BSV21](./template/bsv21/) | BSV21 token standard implementation including LTM and POW20 |
+| [Cosign](./template/cosign/) | Co-signing transactions with multiple parties |
+| [Inscription](./template/inscription/) | On-chain NFT-like inscriptions |
+| [Lockup](./template/lockup/) | Time-locked transactions |
+| [OrdLock](./template/ordlock/) | Locking and unlocking functionality for ordinals |
+| [OrdP2PKH](./template/ordp2pkh/) | Ordinal-aware P2PKH transactions |
+| [P2PKH](./template/p2pkh/) | Standard Pay-to-Public-Key-Hash transactions |
+| [Shrug](./template/shrug/) | Experimental template for demo purposes |
 
-```ts
-...soon™
+Each template folder contains its own README with detailed usage examples.
+
+
+## Installation
+
+```bash
+go get github.com/bitcoin-sv/go-templates
 ```
 
-## Current Templates
+## Basic Usage
 
-Name                            | Description
---------------------------------|--------------------------
-[Example](./src/example.ts)     | Do a thing
+Import the specific template you need:
 
-## Contribution Guidelines
+```go
+import "github.com/bitcoin-sv/go-templates/template/bsocial"
+```
 
-We're always looking for contributors to add the coolest new templates. Whatever kinds of scripts you come up with - all contributions are welcome.
+See each template's README for detailed examples.
 
-1. **Fork & Clone**: Fork this repository and clone it to your local machine.
-2. **Set Up**: Run `go install github.com/bitcoin-sv/go-templates` to install all dependencies.
-3. **Make Changes**: Create a new branch and make your changes.
-4. **Test**: Ensure all tests pass by running `go test`.
-5. **Commit**: Commit your changes and push to your fork.
-6. **Pull Request**: Open a pull request from your fork to this repository.
-For more details, check the [contribution guidelines](./CONTRIBUTING.md).
+## Contributing
 
-For information on past releases, check out the [changelog](./CHANGELOG.md). For future plans, check the [roadmap](./ROADMAP.md)!
+We welcome contributions of all kinds:
 
-## Support & Contacts
-
-Project Owners: Luke Rohenaz
-
-Development Team Lead: Luke Rohenaz
-
-For questions, bug reports, or feature requests, please open an issue on GitHub or contact us directly.
+1. **Fork & Clone**: Fork this repository and clone it locally
+2. **Make Changes**: Add or improve templates
+3. **Test**: Ensure all tests pass with `go test`
+4. **Document**: Add clear documentation with examples in the template's README
+5. **Pull Request**: Submit your changes for review
 
 ## License
 
-The license for the code in this repository is the Open BSV License. Refer to [LICENSE.txt](./LICENSE.txt) for the license text.
+Open BSV License - See [LICENSE.txt](./LICENSE.txt)
 
-Thank you for being a part of the BSV Blockchain Script Templates Project. Let's build the future of BSV Blockchain together!
+## Support
+
+For questions or issues, please open a GitHub issue or contact the project maintainers.
