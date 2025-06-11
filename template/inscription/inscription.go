@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"unicode/utf8"
 
-	"github.com/bsv-blockchain/go-sdk/overlay"
 	"github.com/bsv-blockchain/go-sdk/script"
+	"github.com/bsv-blockchain/go-sdk/transaction"
 )
 
 type File struct {
@@ -17,11 +17,10 @@ type File struct {
 }
 
 type Inscription struct {
-	File         File              `json:"file,omitempty"`
-	Parent       *overlay.Outpoint `json:"parent,omitempty"`
-	Bitcom       map[string][]byte `json:"bitcom,omitempty"`
-	ScriptPrefix []byte            `json:"prefix,omitempty"`
-	ScriptSuffix []byte            `json:"suffix,omitempty"`
+	File         File                  `json:"file,omitempty"`
+	Parent       *transaction.Outpoint `json:"parent,omitempty"`
+	ScriptPrefix []byte                `json:"prefix,omitempty"`
+	ScriptSuffix []byte                `json:"suffix,omitempty"`
 }
 
 func Decode(scr *script.Script) *Inscription {
@@ -29,7 +28,7 @@ func Decode(scr *script.Script) *Inscription {
 		startI := pos
 		if op, err := scr.ReadOp(&pos); err != nil {
 			break
-		} else if pos > 2 && op.Op == script.OpDATA3 && bytes.Equal(op.Data, []byte("ord")) && (*scr)[startI-2] == 0 && (*scr)[startI-1] == script.OpIF {
+		} else if pos >= 2 && op.Op == script.OpDATA3 && bytes.Equal(op.Data, []byte("ord")) && (*scr)[startI-2] == 0 && (*scr)[startI-1] == script.OpIF {
 			insc := &Inscription{
 				ScriptPrefix: (*scr)[:startI-2],
 			}
@@ -48,12 +47,6 @@ func Decode(scr *script.Script) *Inscription {
 				} else if len(op.Data) == 1 {
 					field = int(op.Data[0])
 				} else if len(op.Data) > 1 {
-					if add, err := script.NewAddressFromString(string(op.Data)); err == nil {
-						if insc.Bitcom == nil {
-							insc.Bitcom = make(map[string][]byte)
-						}
-						insc.Bitcom[add.AddressString] = op2.Data
-					}
 					continue
 				}
 				switch field {
@@ -69,13 +62,13 @@ func Decode(scr *script.Script) *Inscription {
 					}
 				case 3:
 					if len(op2.Data) == 36 {
-						insc.Parent = overlay.NewOutpointFromBytes([36]byte(op2.Data))
+						insc.Parent = transaction.NewOutpointFromBytes([36]byte(op2.Data))
 					}
 				}
 
 			}
 			op, err := scr.ReadOp(&pos)
-			if err != nil || op.Op != script.OpENDIF {
+			if err != nil || op.Op == script.OpENDIF {
 				insc.ScriptSuffix = (*scr)[pos:]
 				return insc
 			}
@@ -84,24 +77,20 @@ func Decode(scr *script.Script) *Inscription {
 	return nil
 }
 
-func (i *Inscription) Lock() *script.Script {
+func (i *Inscription) Lock() (*script.Script, error) {
 	s := script.NewFromBytes(i.ScriptPrefix)
-	s.AppendOpcodes(script.Op0, script.OpIF)
-	s.AppendPushData([]byte("ord"))
-	s.AppendOpcodes(script.Op1)
-	s.AppendPushData(i.File.Content)
-	if i.Parent != nil {
-		s.AppendOpcodes(script.Op3)
-		s.AppendPushData(i.Parent.Bytes())
-	}
-	if i.Bitcom != nil {
-		for k, v := range i.Bitcom {
-			s.AppendPushData([]byte(k))
-			s.AppendPushData(v)
-		}
-	}
-	s.AppendOpcodes(script.Op0)
-	s.AppendPushData(i.File.Content)
-	s.AppendOpcodes(script.OpENDIF)
-	return script.NewFromBytes(append(*s, i.ScriptSuffix...))
+	_ = s.AppendOpcodes(script.Op0, script.OpIF)
+	_ = s.AppendPushData([]byte("ord"))
+
+	// Add file type if available
+	// if i.File.Type != "" {
+	_ = s.AppendOpcodes(script.Op1)
+	_ = s.AppendPushDataString(i.File.Type)
+
+	// Add content
+	_ = s.AppendOpcodes(script.Op0)
+	_ = s.AppendPushData(i.File.Content)
+
+	_ = s.AppendOpcodes(script.OpENDIF)
+	return script.NewFromBytes(append(*s, i.ScriptSuffix...)), nil
 }

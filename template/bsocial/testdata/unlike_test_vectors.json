@@ -1,0 +1,15 @@
+{
+  "description": "Test vectors for BSocial unlike action",
+  "vectors": [
+    {
+      "name": "unlike_test_1", 
+      "description": "Unlike action from on-chain data 1",
+      "expected": {
+        "has_unlike": true,
+        "context_type": "tx",
+        "tx_id": "925d7a0cbb8121309ed2273357422c8774a90818c944cedae37d8a86b7af9281",
+        "type": "unlike"
+      }
+    }
+  ]
+} 
